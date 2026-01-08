@@ -1,0 +1,8 @@
+header:
+  license:
+    spdx-id: MPL-2.0
+
+  paths:
+    - "src/**/*.rs"
+
+  comment: on-failure
