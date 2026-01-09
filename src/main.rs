@@ -3,30 +3,16 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use clap::{Parser, Subcommand};
+use std::future::Future;
+use std::pin::Pin;
 
 mod syslog;
 mod telegram;
-// mod mqtt;  // Uncomment when implementing MQTT
 
 #[derive(Parser)]
 #[command(name = "emtt")]
 #[command(about = "Easy Meshtastic to Telegram bridge")]
 struct Cli {
-    #[arg(long, env = "TELEGRAM_BOT_TOKEN")]
-    bot_token: String,
-
-    #[arg(long, env = "TELEGRAM_CHAT_ID")]
-    chat_id: String,
-
-    #[arg(long, env = "EMTT_CHANNEL", default_value = "0")]
-    channel: u32,
-
-    #[arg(long, env = "SYSLOG_HOST", default_value = "0.0.0.0")]
-    syslog_host: String,
-
-    #[arg(long, env = "SYSLOG_PORT", default_value = "50514")]
-    syslog_port: u16,
-
     #[command(subcommand)]
     command: Commands,
 }
@@ -34,8 +20,22 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Launch the syslog server (MVP)
-    Syslog,
-    // Future: Mqtt { ... args ... },
+    Syslog {
+        #[arg(long, env = "TELEGRAM_BOT_TOKEN")]
+        bot_token: String,
+
+        #[arg(long, env = "TELEGRAM_CHAT_ID")]
+        chat_id: String,
+
+        #[arg(long, env = "EMTT_CHANNEL", default_value = "0")]
+        channel: u32,
+
+        #[arg(long, env = "SYSLOG_HOST", default_value = "0.0.0.0")]
+        syslog_host: String,
+
+        #[arg(long, env = "SYSLOG_PORT", default_value = "50514")]
+        syslog_port: u16,
+    },
 }
 
 #[derive(Clone)]
@@ -53,21 +53,38 @@ async fn main() {
 
     let cli = Cli::parse();
 
-    let config = Config {
-        bot_token: cli.bot_token,
-        chat_id: cli.chat_id,
-        channel: cli.channel,
-        syslog_host: cli.syslog_host,
-        syslog_port: cli.syslog_port,
-    };
-
-    let bot = telegram::init_bot(&config);
-
     match cli.command {
-        Commands::Syslog => {
+        Commands::Syslog {
+            bot_token,
+            chat_id,
+            channel,
+            syslog_host,
+            syslog_port,
+        } => {
+            let config = Config {
+                bot_token,
+                chat_id: chat_id.clone(),
+                channel,
+                syslog_host,
+                syslog_port,
+            };
+
+            let bot = telegram::init_bot(&config);
+
+            let sender = move |msg: String| {
+                let bot = bot.clone();
+                let chat_id = chat_id.clone();
+                Box::pin(async move {
+                    if let Err(err) = telegram::send_message(&bot, &chat_id, &msg).await {
+                        log::warn!("Failed to send message to Telegram: {}", err);
+                    } else {
+                        log::info!("Forwarded message to Telegram: {}", msg);
+                    }
+                }) as Pin<Box<dyn Future<Output = ()> + Send>>
+            };
+
             log::info!("Launching syslog server...");
-            syslog::run_server(&config).await;
+            syslog::run_server(&config, sender).await;
         }
-        // Future: Commands::Mqtt => mqtt::run_client(&config).await,
     }
 }

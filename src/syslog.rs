@@ -3,6 +3,8 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use std::collections::HashMap;
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -204,16 +206,21 @@ async fn parse_and_store_handle_received(
     false
 }
 
-async fn parse_and_process_text_message(
+async fn parse_and_process_text_message<F, Fut>(
     message: &str,
     ident: &str,
     config: &Config,
+    sender: &F,
     handle_infos: &Arc<Mutex<HashMap<u32, HandleInfo>>>,
     known_nodes: &Arc<Mutex<HashMap<u32, NodeInfo>>>,
-) -> bool {
+) -> bool
+where
+    F: Fn(String) -> Fut,
+    Fut: Future<Output = ()>,
+{
     let re = Regex::new(r"Received text msg from=0x([0-9a-fA-F]+), id=0x([0-9a-fA-F]+), msg=(.+)").unwrap();
     if let Some(caps) = re.captures(message) {
-        let mut from = match u32::from_str_radix(&caps[1], 16) {
+        let from = match u32::from_str_radix(&caps[1], 16) {
             Ok(f) => f,
             Err(_) => return false,
         };
@@ -310,19 +317,17 @@ async fn parse_and_process_text_message(
             from_name, ident, text, snr, rssi, hops_away
         );
 
-        println!("{}", &msg_to_send);
-        //if let Err(err) = crate::telegram::send_message(bot, &config.chat_id, &msg_to_send).await {
-        //    warn!("Failed to send message to Telegram: {}", err);
-        //} else {
-        //    info!("Forwarded message to Telegram: {}", text);
-        //}
+        sender(msg_to_send).await;
 
         return true;
     }
     false
 }
 
-pub async fn run_server(config: &Config) {
+pub async fn run_server<F>(config: &Config, sender: F)
+where
+    F: Fn(String) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync + 'static,
+{
     let known_nodes: Arc<Mutex<HashMap<u32, NodeInfo>>> = Arc::new(Mutex::new(HashMap::new()));
     let handle_infos: Arc<Mutex<HashMap<u32, HandleInfo>>> = Arc::new(Mutex::new(HashMap::new()));
 
@@ -367,8 +372,6 @@ pub async fn run_server(config: &Config) {
             ident, peer, message
         );
 
-        // Ignore positions and other non-relevant parses for MVP
-
         if parse_and_store_nodeinfo(&message, &handle_infos, &known_nodes).await {
             continue;
         }
@@ -381,6 +384,7 @@ pub async fn run_server(config: &Config) {
             &message,
             &ident,
             config,
+            &sender,
             &handle_infos,
             &known_nodes,
         )
