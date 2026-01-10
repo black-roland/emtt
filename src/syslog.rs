@@ -273,9 +273,19 @@ where
             return true;
         }
 
-        if via_info.ch != config.channel || via_info.to != 0xffffffff {
+        let forward = if via_info.to == 0xffffffff {
+            if let Some(ch) = config.channel {
+                via_info.ch == ch
+            } else {
+                false
+            }
+        } else {
+            config.dm
+        };
+
+        if !forward {
             info!(
-                "Ignoring private text msg id: 0x{:08x}, ch: {}, to: 0x{:08x}",
+                "Ignoring text msg id: 0x{:08x}, ch: {}, to: 0x{:08x}",
                 id, via_info.ch, via_info.to
             );
             if h.vias.is_empty() {

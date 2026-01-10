@@ -28,8 +28,11 @@ enum Commands {
         #[arg(long, env = "TELEGRAM_CHAT_ID")]
         chat_id: i64,
 
-        #[arg(long, env = "EMTT_CHANNEL", default_value = "0")]
-        channel: u32,
+        #[arg(long, env = "EMTT_DM", default_value = "true")]
+        dm: bool,
+
+        #[arg(long, env = "EMTT_CHANNEL")]
+        channel: Option<u32>,
 
         #[arg(long, env = "SYSLOG_HOST", default_value = "0.0.0.0")]
         syslog_host: String,
@@ -43,7 +46,8 @@ enum Commands {
 struct Config {
     bot_token: String,
     chat_id: i64,
-    channel: u32,
+    dm: bool,
+    channel: Option<u32>,
     syslog_host: String,
     syslog_port: u16,
 }
@@ -58,6 +62,7 @@ async fn main() {
         Commands::Syslog {
             bot_token,
             chat_id,
+            dm,
             channel,
             syslog_host,
             syslog_port,
@@ -65,6 +70,7 @@ async fn main() {
             let config = Config {
                 bot_token,
                 chat_id,
+                dm,
                 channel,
                 syslog_host,
                 syslog_port,
