@@ -26,7 +26,7 @@ enum Commands {
         bot_token: String,
 
         #[arg(long, env = "TELEGRAM_CHAT_ID")]
-        chat_id: String,
+        chat_id: i64,
 
         #[arg(long, env = "EMTT_CHANNEL", default_value = "0")]
         channel: u32,
@@ -42,7 +42,7 @@ enum Commands {
 #[derive(Clone)]
 struct Config {
     bot_token: String,
-    chat_id: String,
+    chat_id: i64,
     channel: u32,
     syslog_host: String,
     syslog_port: u16,
@@ -64,7 +64,7 @@ async fn main() {
         } => {
             let config = Config {
                 bot_token,
-                chat_id: chat_id.clone(),
+                chat_id,
                 channel,
                 syslog_host,
                 syslog_port,
@@ -72,16 +72,20 @@ async fn main() {
 
             let bot = telegram::init_bot(&config);
 
-            let sender = move |msg: String| {
+            let sender = {
                 let bot = bot.clone();
-                let chat_id = chat_id.clone();
-                Box::pin(async move {
-                    if let Err(err) = telegram::send_message(&bot, &chat_id, &msg).await {
-                        log::warn!("Failed to send message to Telegram: {}", err);
-                    } else {
-                        log::info!("Forwarded message to Telegram: {}", msg);
-                    }
-                }) as Pin<Box<dyn Future<Output = ()> + Send>>
+                let chat_id = config.chat_id;
+                move |msg: String| {
+                    let bot = bot.clone();
+                    let chat_id = chat_id;
+                    Box::pin(async move {
+                        if let Err(err) = telegram::send_message(&bot, chat_id, &msg).await {
+                            log::warn!("Failed to send message to Telegram: {}", err);
+                        } else {
+                            log::info!("Forwarded message to Telegram: {}", msg);
+                        }
+                    }) as Pin<Box<dyn Future<Output = ()> + Send>>
+                }
             };
 
             log::info!("Launching syslog server...");
