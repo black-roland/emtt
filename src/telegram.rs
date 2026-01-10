@@ -3,7 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use teloxide::{prelude::*, Bot};
-use teloxide::types::ChatId;
+use teloxide::types::{ChatId, ParseMode};
 
 use crate::Config;
 
@@ -15,7 +15,12 @@ pub async fn send_message(
     bot: &Bot,
     chat_id: i64,
     message: &str,
+    parse_mode: Option<ParseMode>,
 ) -> Result<(), teloxide::RequestError> {
-    bot.send_message(ChatId(chat_id), message).await?;
+    let mut req = bot.send_message(ChatId(chat_id), message);
+    if let Some(pm) = parse_mode {
+        req = req.parse_mode(pm);
+    }
+    req.await?;
     Ok(())
 }

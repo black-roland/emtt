@@ -14,6 +14,7 @@ use tokio::net::UdpSocket;
 use tokio::sync::Mutex;
 
 use crate::Config;
+use super::MessageData;
 
 #[derive(Clone)]
 struct NodeInfo {
@@ -215,7 +216,7 @@ async fn parse_and_process_text_message<F, Fut>(
     known_nodes: &Arc<Mutex<HashMap<u32, NodeInfo>>>,
 ) -> bool
 where
-    F: Fn(String) -> Fut,
+    F: Fn(MessageData) -> Fut,
     Fut: Future<Output = ()>,
 {
     let re = Regex::new(r"Received text msg from=0x([0-9a-fA-F]+), id=0x([0-9a-fA-F]+), msg=(.+)").unwrap();
@@ -280,7 +281,7 @@ where
                 false
             }
         } else {
-            config.dm
+            config.dm && via_info.ch == 0
         };
 
         if !forward {
@@ -296,11 +297,7 @@ where
 
         let snr = via_info.snr;
         let rssi = via_info.rssi;
-        let hops_away = if let (Some(hs), Some(hl)) = (via_info.hop_start, via_info.hop_lim) {
-            hs.saturating_sub(hl) as i32
-        } else {
-            -1
-        };
+        let hops_away = via_info.hop_start.zip(via_info.hop_lim).map(|(hs, hl)| hs.saturating_sub(hl) as i32);
 
         if h.vias.is_empty() {
             handles.remove(&id);
@@ -322,12 +319,16 @@ where
             from_name = format!("{} (Local)", shortname);
         }
 
-        let msg_to_send = format!(
-            "From: {} (via {})\nText: {}\nSNR: {:?}, RSSI: {:?}, Hops away: {}",
-            from_name, ident, text, snr, rssi, hops_away
-        );
+        let data = MessageData {
+            from: from_name,
+            via: ident.to_string(),
+            text,
+            snr,
+            rssi,
+            hops_away,
+        };
 
-        sender(msg_to_send).await;
+        sender(data).await;
 
         return true;
     }
@@ -336,7 +337,7 @@ where
 
 pub async fn run_server<F>(config: &Config, sender: F)
 where
-    F: Fn(String) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync + 'static,
+    F: Fn(MessageData) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync + 'static,
 {
     let known_nodes: Arc<Mutex<HashMap<u32, NodeInfo>>> = Arc::new(Mutex::new(HashMap::new()));
     let handle_infos: Arc<Mutex<HashMap<u32, HandleInfo>>> = Arc::new(Mutex::new(HashMap::new()));
