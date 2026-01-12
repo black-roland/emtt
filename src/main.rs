@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use minijinja::{context, Environment};
 use std::future::Future;
 use std::pin::Pin;
@@ -30,9 +30,18 @@ struct Cli {
     command: Commands,
 }
 
+#[derive(Clone, Copy, Debug, ValueEnum)]
+enum ParseModeOpt {
+    #[value(name = "none")]
+    None,
+    #[value(name = "html")]
+    Html,
+    #[value(name = "markdown")]
+    Markdown,
+}
+
 #[derive(Subcommand)]
 enum Commands {
-    /// Launch the syslog server (MVP)
     Syslog {
         #[arg(long, env = "TELEGRAM_BOT_TOKEN")]
         bot_token: String,
@@ -40,17 +49,17 @@ enum Commands {
         #[arg(long, env = "TELEGRAM_CHAT_ID")]
         chat_id: i64,
 
-        #[arg(long, env = "EMTT_DM", default_value = "true")]
+        #[arg(long, env = "MESH_DM", default_value = "true")]
         dm: bool,
 
-        #[arg(long, env = "EMTT_CHANNEL")]
+        #[arg(long, env = "MESH_CHANNEL")]
         channel: Option<u32>,
 
-        #[arg(long, env = "TELEGRAM_TEMPLATE", default_value = "From: {{ from }} (via {{ via }})\nText: {{ text }}\nSNR: {{ snr | default(\"N/A\") }}, RSSI: {{ rssi | default(\"N/A\") }}, Hops away: {{ hops_away | default(\"N/A\") }}")]
+        #[arg(long, env = "TELEGRAM_TEMPLATE", default_value = "<b>{{ from | e }}</b> (via <i>{{ via | e }}</i>)\nSNR: {{ snr | default(\"N/A\") }} | RSSI: {{ rssi | default(\"N/A\") }} | Hops: {{ hops_away | default(\"N/A\") }}\n<blockquote>{{ text | e }}</blockquote>")]
         template: String,
 
-        #[arg(long, env = "EMTT_MARKDOWN", default_value = "false")]
-        markdown: bool,
+        #[arg(long, env = "TELEGRAM_PARSE_MODE", default_value = "html")]
+        parse_mode: ParseModeOpt,
 
         #[arg(long, env = "SYSLOG_HOST", default_value = "0.0.0.0")]
         syslog_host: String,
@@ -67,7 +76,7 @@ struct Config {
     dm: bool,
     channel: Option<u32>,
     template: String,
-    markdown: bool,
+    parse_mode: ParseModeOpt,
     syslog_host: String,
     syslog_port: u16,
 }
@@ -122,7 +131,7 @@ async fn main() {
             dm,
             channel,
             template,
-            markdown,
+            parse_mode,
             syslog_host,
             syslog_port,
         } => {
@@ -133,7 +142,7 @@ async fn main() {
                 dm,
                 channel,
                 template,
-                markdown,
+                parse_mode,
                 syslog_host,
                 syslog_port,
             };
@@ -144,12 +153,12 @@ async fn main() {
                 let bot = bot.clone();
                 let chat_id = config.chat_id;
                 let template = config.template.clone();
-                let markdown = config.markdown;
+                let parse_mode_opt = config.parse_mode;
                 move |data: MessageData| {
                     let bot = bot.clone();
                     let chat_id = chat_id;
                     let template = template.clone();
-                    let markdown = markdown;
+                    let parse_mode_opt = parse_mode_opt;
                     Box::pin(async move {
                         let env = Environment::new();
                         let ctx = context! {
@@ -167,9 +176,13 @@ async fn main() {
                                 return;
                             }
                         };
-                        let parse_mode = if markdown { Some(ParseMode::MarkdownV2) } else { None };
+                        let parse_mode = match parse_mode_opt {
+                            ParseModeOpt::None => None,
+                            ParseModeOpt::Html => Some(ParseMode::Html),
+                            ParseModeOpt::Markdown => Some(ParseMode::MarkdownV2),
+                        };
                         if let Err(err) = telegram::send_message(&bot, chat_id, &rendered, parse_mode).await {
-                            log::warn!("Failed to send message to Telegram: {}", err);
+                            log::warn!("Failed to send message to Telegram: {}\nMessage content: {}", err, rendered);
                         } else {
                             log::info!("Forwarded message to Telegram: {}", rendered);
                         }
