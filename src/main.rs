@@ -3,6 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use clap::{Parser, Subcommand, ValueEnum};
+use env_logger::Env;
 use minijinja::{context, Environment};
 use std::future::Future;
 use std::pin::Pin;
@@ -120,7 +121,8 @@ fn unescape_template(s: String) -> String {
 
 #[tokio::main]
 async fn main() {
-    env_logger::init();
+    let env = Env::new().filter_or("LOG_LEVEL", "info");
+    env_logger::Builder::from_env(env).init();
 
     let cli = Cli::parse();
 
@@ -146,6 +148,17 @@ async fn main() {
                 syslog_host,
                 syslog_port,
             };
+
+            log::info!("Starting emtt in syslog mode");
+            log::info!("  Telegram chat ID: {}", config.chat_id);
+            log::info!("  Forward direct messages: {}", config.dm);
+            if let Some(ch) = config.channel {
+                log::info!("  Forward channel messages: {}", ch);
+            } else {
+                log::info!("  Channel forwarding disabled");
+            }
+            log::info!("  Default parse mode: {:?}", config.parse_mode);
+            log::info!("  Syslog listening on {}:{}", config.syslog_host, config.syslog_port);
 
             let bot = telegram::init_bot(&config);
 
@@ -184,7 +197,7 @@ async fn main() {
                         if let Err(err) = telegram::send_message(&bot, chat_id, &rendered, parse_mode).await {
                             log::warn!("Failed to send message to Telegram: {}\nMessage content: {}", err, rendered);
                         } else {
-                            log::info!("Forwarded message to Telegram: {}", rendered);
+                            log::info!("Forwarded message to Telegram (from {}): {}", data.from, rendered);
                         }
                     }) as Pin<Box<dyn Future<Output = ()> + Send>>
                 }

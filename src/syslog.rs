@@ -113,11 +113,11 @@ async fn parse_and_store_nodeinfo(
         nodes.insert(
             id,
             NodeInfo {
-                shortname,
-                longname,
+                shortname: shortname.clone(),
+                longname: longname.clone(),
             },
         );
-        info!("Processed nodeinfo for id: 0x{:08x}", id);
+        info!("Processed nodeinfo: {} ({}) - 0x{:08x}", longname, shortname, id);
         return true;
     }
     false
@@ -199,8 +199,8 @@ async fn parse_and_store_handle_received(
         );
 
         debug!(
-            "Stored handle info for id: 0x{:08x}, via: {}, ch: {}, to: 0x{:08x}, is_mqtt: {}",
-            id, ident, ch, to.unwrap_or(0), is_mqtt
+            "Stored handle info for text msg id: 0x{:08x}, via: {}, ch: {}, is_mqtt: {}",
+            id, ident, ch, is_mqtt
         );
         return true;
     }
@@ -231,9 +231,12 @@ where
         };
         let text = caps[3].to_string();
 
+        let from_hex = format!("0x{:08x}", from);
+        info!("Received text msg from {} id 0x{:08x}: {}", from_hex, id, text);
+
         let range_test_re = Regex::new(r"^seq \d+$").unwrap();
         if range_test_re.is_match(&text) {
-            debug!("Ignoring range test message: {}", text);
+            debug!("Ignoring range test message from {} id 0x{:08x}", from_hex, id);
             return true;
         }
 
@@ -305,7 +308,6 @@ where
         drop(handles);
 
         // Format and send to Telegram
-        let from_hex = format!("0x{:08x}", from);
         let mut from_name = known_nodes
             .lock()
             .await
