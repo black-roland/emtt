@@ -12,6 +12,7 @@ mod telegram;
 #[derive(Parser)]
 #[command(name = "emtt")]
 #[command(about = "Easy Meshtastic to Telegram bridge")]
+#[command(long_about = "Easy Meshtastic to Telegram bridge\n\nProject page: https://github.com/black-roland/emtt\nDocumentation: https://boosty.to/mansmarthome\nLicense: MPL 2.0")]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
