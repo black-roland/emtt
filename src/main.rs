@@ -40,7 +40,14 @@ enum Commands {
         #[arg(help = fl!("arg-chat-id"))]
         chat_id: i64,
 
-        #[arg(long, env = "MESH_DM", default_value = "true")]
+        #[arg(
+            long,
+            env = "MESH_DM",
+            value_parser = clap::value_parser!(bool),
+            default_value_t = true,
+            num_args = 0..=1,
+            default_missing_value = "true",
+        )]
         #[arg(help = fl!("arg-dm"))]
         dm: bool,
 
