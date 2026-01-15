@@ -3,12 +3,15 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use clap::{Parser, Subcommand, ValueEnum};
+use clap_i18n_richformatter::{clap_i18n, ClapI18nRichFormatter, init_clap_rich_formatter_localizer};
 use env_logger::Env;
 use minijinja::{context, Environment};
 use std::future::Future;
 use std::pin::Pin;
+use std::sync::LazyLock;
 use teloxide::types::ParseMode;
 
+mod lang;
 mod syslog;
 mod telegram;
 
@@ -22,10 +25,80 @@ pub struct MessageData {
     hops_away: Option<i32>,
 }
 
+// --- Define Commands enum BEFORE Cli struct ---
+#[derive(Subcommand)]
+enum Commands {
+    /// Run in syslog mode - Help text will be localized via fl! macro
+    #[command(about = fl!("command-syslog"))]
+    #[command(next_help_heading = &**ARG_HELP_HEADING)]
+    Syslog {
+        #[arg(long, env = "TELEGRAM_BOT_TOKEN")]
+        #[arg(help = fl!("arg-bot-token"))]
+        bot_token: String,
+
+        #[arg(long, env = "TELEGRAM_CHAT_ID")]
+        #[arg(help = fl!("arg-chat-id"))]
+        chat_id: i64,
+
+        #[arg(long, env = "MESH_DM", default_value = "true")]
+        #[arg(help = fl!("arg-dm"))]
+        dm: bool,
+
+        #[arg(long, env = "MESH_CHANNEL")]
+        #[arg(help = fl!("arg-channel"))]
+        channel: Option<u32>,
+
+        #[arg(long, env = "TELEGRAM_TEMPLATE", default_value = "<b>{{ from | e }}</b> (via <i>{{ via | e }}</i>)\nSNR: {{ snr | default(\"N/A\") }} | RSSI: {{ rssi | default(\"N/A\") }} | Hops: {{ hops_away | default(\"N/A\") }}\n<blockquote>{{ text | e }}</blockquote>")]
+        #[arg(help = fl!("arg-template"))]
+        template: String,
+
+        #[arg(long, env = "TELEGRAM_PARSE_MODE", default_value = "html")]
+        #[arg(help = fl!("arg-parse-mode"))]
+        parse_mode: ParseModeOpt,
+
+        #[arg(long, env = "SYSLOG_HOST", default_value = "0.0.0.0")]
+        #[arg(help = fl!("arg-syslog-host"))]
+        syslog_host: String,
+
+        #[arg(long, env = "SYSLOG_PORT", default_value = "50514")]
+        #[arg(help = fl!("arg-syslog-port"))]
+        syslog_port: u16,
+    },
+}
+// --- End Commands definition ---
+
+pub static HELP_HEADING: LazyLock<String> = LazyLock::new(|| fl!("command-syslog")); // Or another appropriate heading key
+pub static ARG_HELP_HEADING: LazyLock<String> = LazyLock::new(|| fl!("arg-bot-token")); // Use a general heading or specific one if needed
+pub static HELP_TEMPLATE: LazyLock<String> = LazyLock::new(|| {
+    format!(
+        "\
+{{before-help}}{{about-with-newline}}
+
+{}{}:{} {{usage}}
+
+{{all-args}}{{after-help}}\
+        ",
+        clap::builder::Styles::default().get_usage().render(),
+        fl!("usage"),
+        clap::builder::Styles::default().get_usage().render_reset()
+    )
+});
+
+fn localize_bool(value: bool) -> String {
+    if value {
+        fl!("true-value").to_string()
+    } else {
+        fl!("false-value").to_string()
+    }
+}
+
 #[derive(Parser)]
+#[clap_i18n] // Apply this to the main struct
 #[command(name = "emtt")]
-#[command(about = "Easy Meshtastic to Telegram bridge")]
-#[command(long_about = "Easy Meshtastic to Telegram bridge\n\nProject page: https://github.com/black-roland/emtt\nDocumentation: https://boosty.to/mansmarthome\nLicense: MPL 2.0")]
+#[command(about = fl!("app-description"))]
+#[command(long_about = fl!("app-long-description"))]
+#[command(next_help_heading = &**ARG_HELP_HEADING)]
+#[command(help_template = &*HELP_TEMPLATE)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -33,42 +106,14 @@ struct Cli {
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
 enum ParseModeOpt {
-    #[value(name = "none")]
+    #[value(name = "none", help = fl!("parse-mode-none"))]
     None,
-    #[value(name = "html")]
+    #[value(name = "html", help = fl!("parse-mode-html"))]
     Html,
-    #[value(name = "markdown")]
+    #[value(name = "markdown", help = fl!("parse-mode-markdown"))]
     Markdown,
 }
 
-#[derive(Subcommand)]
-enum Commands {
-    Syslog {
-        #[arg(long, env = "TELEGRAM_BOT_TOKEN")]
-        bot_token: String,
-
-        #[arg(long, env = "TELEGRAM_CHAT_ID")]
-        chat_id: i64,
-
-        #[arg(long, env = "MESH_DM", default_value = "true")]
-        dm: bool,
-
-        #[arg(long, env = "MESH_CHANNEL")]
-        channel: Option<u32>,
-
-        #[arg(long, env = "TELEGRAM_TEMPLATE", default_value = "<b>{{ from | e }}</b> (via <i>{{ via | e }}</i>)\nSNR: {{ snr | default(\"N/A\") }} | RSSI: {{ rssi | default(\"N/A\") }} | Hops: {{ hops_away | default(\"N/A\") }}\n<blockquote>{{ text | e }}</blockquote>")]
-        template: String,
-
-        #[arg(long, env = "TELEGRAM_PARSE_MODE", default_value = "html")]
-        parse_mode: ParseModeOpt,
-
-        #[arg(long, env = "SYSLOG_HOST", default_value = "0.0.0.0")]
-        syslog_host: String,
-
-        #[arg(long, env = "SYSLOG_PORT", default_value = "50514")]
-        syslog_port: u16,
-    },
-}
 
 #[derive(Clone)]
 struct Config {
@@ -85,6 +130,7 @@ struct Config {
 fn unescape_template(s: String) -> String {
     let mut result = String::new();
     let mut chars = s.chars().peekable();
+
     while let Some(ch) = chars.next() {
         if ch == '\\' {
             if let Some(next) = chars.peek() {
@@ -116,15 +162,27 @@ fn unescape_template(s: String) -> String {
             result.push(ch);
         }
     }
+
     result
 }
 
 #[tokio::main]
 async fn main() {
+    // Initialize i18n first
+    init_clap_rich_formatter_localizer();
+    lang::init_localizer();
+
     let env = Env::new().filter_or("LOG_LEVEL", "info");
     env_logger::Builder::from_env(env).init();
 
-    let cli = Cli::parse();
+    // Use the i18n-aware parsing method
+    let cli = match Cli::try_parse() {
+        Ok(cli) => cli,
+        Err(e) => {
+            let e = e.apply::<ClapI18nRichFormatter>();
+            e.exit();
+        }
+    };
 
     match cli.command {
         Commands::Syslog {
@@ -149,29 +207,33 @@ async fn main() {
                 syslog_port,
             };
 
-            log::info!("Starting emtt in syslog mode");
-            log::info!("  Telegram chat ID: {}", config.chat_id);
-            log::info!("  Forward direct messages: {}", config.dm);
+            log::info!("{}", fl!("starting-syslog-mode"));
+            log::info!("{}", fl!("telegram-chat-id", chat_id = config.chat_id));
+
+            log::info!("{}", fl!("forward-dm", dm = localize_bool(config.dm)));
+
             if let Some(ch) = config.channel {
-                log::info!("  Forward channel messages: {}", ch);
+                log::info!("{}", fl!("forward-channel", channel = ch));
             } else {
-                log::info!("  Channel forwarding disabled");
+                log::info!("{}", fl!("channel-disabled"));
             }
-            log::info!("  Default parse mode: {:?}", config.parse_mode);
-            log::info!("  Syslog listening on {}:{}", config.syslog_host, config.syslog_port);
+
+            log::info!("{}", fl!("parse-mode", parse_mode = format!("{:?}", config.parse_mode)));
+            log::info!("{}", fl!("syslog-listening", host = config.syslog_host.clone(), port = config.syslog_port));
 
             let bot = telegram::init_bot(&config);
-
             let sender = {
                 let bot = bot.clone();
                 let chat_id = config.chat_id;
                 let template = config.template.clone();
                 let parse_mode_opt = config.parse_mode;
+
                 move |data: MessageData| {
                     let bot = bot.clone();
                     let chat_id = chat_id;
                     let template = template.clone();
                     let parse_mode_opt = parse_mode_opt;
+
                     Box::pin(async move {
                         let env = Environment::new();
                         let ctx = context! {
@@ -182,28 +244,35 @@ async fn main() {
                             rssi => data.rssi,
                             hops_away => data.hops_away,
                         };
+
                         let rendered = match env.render_str(&template, ctx) {
                             Ok(s) => s,
                             Err(e) => {
-                                log::warn!("Failed to render template: {}", e);
+                                log::warn!("{}", fl!("failed-to-render", error = e.to_string()));
                                 return;
                             }
                         };
+
                         let parse_mode = match parse_mode_opt {
                             ParseModeOpt::None => None,
                             ParseModeOpt::Html => Some(ParseMode::Html),
                             ParseModeOpt::Markdown => Some(ParseMode::MarkdownV2),
                         };
+
                         if let Err(err) = telegram::send_message(&bot, chat_id, &rendered, parse_mode).await {
-                            log::warn!("Failed to send message to Telegram: {}\nMessage content: {}", err, rendered);
+                            log::warn!(
+                                "{}\n{}",
+                                fl!("failed-to-send", error = err.to_string()),
+                                fl!("message-content", content = rendered)
+                            );
                         } else {
-                            log::info!("Forwarded message to Telegram (from {}): {}", data.from, rendered);
+                            log::debug!("{}", fl!("forwarded-to-telegram", from = data.from, message = rendered));
                         }
                     }) as Pin<Box<dyn Future<Output = ()> + Send>>
                 }
             };
 
-            log::info!("Launching syslog server...");
+            log::info!("{}", fl!("syslog-server"));
             syslog::run_server(&config, sender).await;
         }
     }

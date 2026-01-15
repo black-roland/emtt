@@ -7,14 +7,15 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-
 use log::{debug, info, warn};
 use regex::Regex;
 use tokio::net::UdpSocket;
 use tokio::sync::Mutex;
-
 use crate::Config;
 use super::MessageData;
+
+// Import the fl! macro from the crate root (which re-exports it from lang)
+use crate::fl;
 
 #[derive(Clone)]
 struct NodeInfo {
@@ -76,6 +77,7 @@ fn parse_syslog_message(text: &str) -> Result<(String, String), &'static str> {
             if text.as_bytes().get(cursor) == Some(&b' ') {
                 cursor += 1;
             }
+
             let message = text[cursor..].trim_end_matches('\n').to_string();
             return Ok((ident, message));
         } else {
@@ -92,6 +94,7 @@ async fn parse_and_store_nodeinfo(
     known_nodes: &Arc<Mutex<HashMap<u32, NodeInfo>>>,
 ) -> bool {
     let re = Regex::new(r"Update changed=\d+ user (.+)/([^,/]+), id=0x([0-9a-fA-F]+), channel=\d+").unwrap();
+
     if let Some(caps) = re.captures(message) {
         let longname = caps[1].to_string();
         let shortname = caps[2].to_string();
@@ -117,9 +120,11 @@ async fn parse_and_store_nodeinfo(
                 longname: longname.clone(),
             },
         );
-        info!("Processed nodeinfo: {} ({}) - 0x{:08x}", longname, shortname, id);
+
+        debug!("{}", fl!("processed-nodeinfo", longname = longname, shortname = shortname, id = format!("0x{:08x}", id)));
         return true;
     }
+
     false
 }
 
@@ -129,6 +134,7 @@ async fn parse_and_store_handle_received(
     handle_infos: &Arc<Mutex<HashMap<u32, HandleInfo>>>,
 ) -> bool {
     let re = Regex::new(r"^handleReceived\(([^)]+)\) \((.*)\)$").unwrap();
+
     if let Some(caps) = re.captures(message) {
         // h_type = &caps[1]; not used
         let mut content = caps[2].to_string();
@@ -149,6 +155,7 @@ async fn parse_and_store_handle_received(
             Some(s) => s.clone(),
             None => return false,
         };
+
         let id = match u32::from_str_radix(&id_str[2..], 16) {
             Ok(id) => id,
             Err(_) => return false,
@@ -157,24 +164,17 @@ async fn parse_and_store_handle_received(
         let fr = fields
             .get("fr")
             .and_then(|s| u32::from_str_radix(&s[2..], 16).ok());
-
         let to = fields
             .get("to")
             .and_then(|s| u32::from_str_radix(&s[2..], 16).ok());
-
         let ch = fields
             .get("Ch")
             .and_then(|s| u32::from_str_radix(&s[2..], 16).ok())
             .unwrap_or(0);
-
         let snr = fields.get("rxSNR").and_then(|s| s.parse::<f32>().ok());
-
         let rssi = fields.get("rxRSSI").and_then(|s| s.parse::<i32>().ok());
-
         let hop_lim = fields.get("HopLim").and_then(|s| s.parse::<u32>().ok());
-
         let hop_start = fields.get("hopStart").and_then(|s| s.parse::<u32>().ok());
-
         let via_str = fields.get("via").cloned().unwrap_or_default();
         let is_mqtt = via_str == "MQTT";
 
@@ -183,6 +183,7 @@ async fn parse_and_store_handle_received(
             is_mqtt: false,
             vias: HashMap::new(),
         });
+
         entry.is_mqtt = is_mqtt;
         entry.vias.insert(
             ident.to_string(),
@@ -204,6 +205,7 @@ async fn parse_and_store_handle_received(
         );
         return true;
     }
+
     false
 }
 
@@ -220,23 +222,25 @@ where
     Fut: Future<Output = ()>,
 {
     let re = Regex::new(r"Received text msg from=0x([0-9a-fA-F]+), id=0x([0-9a-fA-F]+), msg=(.+)").unwrap();
+
     if let Some(caps) = re.captures(message) {
         let from = match u32::from_str_radix(&caps[1], 16) {
             Ok(f) => f,
             Err(_) => return false,
         };
+
         let id = match u32::from_str_radix(&caps[2], 16) {
             Ok(i) => i,
             Err(_) => return false,
         };
-        let text = caps[3].to_string();
 
+        let text = caps[3].to_string();
         let from_hex = format!("0x{:08x}", from);
         info!("Received text msg from {} id 0x{:08x}: {}", from_hex, id, text);
 
         let range_test_re = Regex::new(r"^seq \d+$").unwrap();
         if range_test_re.is_match(&text) {
-            debug!("Ignoring range test message from {} id 0x{:08x}", from_hex, id);
+            debug!("{}", fl!("ignoring-range-test", from = from_hex, id = format!("0x{:08x}", id)));
             return true;
         }
 
@@ -244,7 +248,7 @@ where
         let h = match handles.get_mut(&id) {
             Some(h) => h,
             None => {
-                warn!("No handle info for text msg id: 0x{:08x}", id);
+                warn!("{}", fl!("no-handle-info", id = format!("0x{:08x}", id)));
                 return true;
             }
         };
@@ -253,7 +257,7 @@ where
         let via_info = match h.vias.remove(&via_key) {
             Some(v) => v,
             None => {
-                warn!("No via info for text msg id: 0x{:08x}, via: {}", id, ident);
+                warn!("{}", fl!("no-via-info", id = format!("0x{:08x}", id), via = ident));
                 if h.vias.is_empty() {
                     handles.remove(&id);
                 }
@@ -262,7 +266,7 @@ where
         };
 
         if now() - via_info.timestamp > 180 {
-            warn!("Stale handle info for text msg id: 0x{:08x}", id);
+            warn!("{}", fl!("stale-handle-info", id = format!("0x{:08x}", id)));
             if h.vias.is_empty() {
                 handles.remove(&id);
             }
@@ -270,7 +274,7 @@ where
         }
 
         if h.is_mqtt {
-            debug!("Skipping MQTT-forwarded text for msg id: 0x{:08x}", id);
+            debug!("{}", fl!("skipping-mqtt", id = format!("0x{:08x}", id)));
             if h.vias.is_empty() {
                 handles.remove(&id);
             }
@@ -288,10 +292,7 @@ where
         };
 
         if !forward {
-            info!(
-                "Ignoring text msg id: 0x{:08x}, ch: {}, to: 0x{:08x}",
-                id, via_info.ch, via_info.to
-            );
+            info!("{}", fl!("ignoring-text-msg", id = format!("0x{:08x}", id), ch = via_info.ch, to = format!("0x{:08x}", via_info.to)));
             if h.vias.is_empty() {
                 handles.remove(&id);
             }
@@ -305,6 +306,7 @@ where
         if h.vias.is_empty() {
             handles.remove(&id);
         }
+
         drop(handles);
 
         // Format and send to Telegram
@@ -331,9 +333,9 @@ where
         };
 
         sender(data).await;
-
         return true;
     }
+
     false
 }
 
@@ -352,14 +354,15 @@ where
             return;
         }
     };
-    info!("Syslog server listening on {}", addr);
+
+    info!("{}", fl!("syslog-binding", addr = addr));
 
     let mut buf = [0; 1024];
     loop {
         let (len, peer) = match socket.recv_from(&mut buf).await {
             Ok((l, p)) => (l, p),
             Err(e) => {
-                warn!("Recv error: {}", e);
+                warn!("{}", fl!("recv-error", error = e.to_string()));
                 continue;
             }
         };
@@ -367,7 +370,7 @@ where
         let msg = match String::from_utf8(buf[..len].to_vec()) {
             Ok(m) => m,
             Err(_) => {
-                warn!("Invalid UTF-8 from {}", peer);
+                warn!("{}", fl!("invalid-utf8", peer = peer.to_string()));
                 continue;
             }
         };
@@ -375,7 +378,7 @@ where
         let (ident, message) = match parse_syslog_message(&msg) {
             Ok(r) => r,
             Err(err) => {
-                warn!("Failed to parse syslog: {}, raw: {}", err, msg);
+                warn!("{}", fl!("failed-to-parse-syslog", error = err, raw = msg));
                 continue;
             }
         };
@@ -407,6 +410,6 @@ where
         }
 
         // If none matched, log verbose
-        debug!("Unhandled syslog message: {}", message);
+        debug!("{}", fl!("unhandled-syslog", message = message));
     }
 }
