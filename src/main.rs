@@ -95,6 +95,7 @@ fn localize_bool(value: bool) -> String {
 #[derive(Parser)]
 #[clap_i18n] // Apply this to the main struct
 #[command(name = "emtt")]
+#[command(version = env!("CARGO_PKG_VERSION"))]
 #[command(about = fl!("app-description"))]
 #[command(long_about = fl!("app-long-description"))]
 #[command(next_help_heading = &**ARG_HELP_HEADING)]
@@ -166,14 +167,39 @@ fn unescape_template(s: String) -> String {
     result
 }
 
+fn print_sponsorship_message() {
+    println!();
+
+    #[cfg(feature = "boosty")]
+    {
+        log::info!("{}", fl!("boosty-sponsorship-message"));
+        log::info!("{}: {}", fl!("documentation-link"), fl!("boosty-url"));
+    }
+
+    #[cfg(not(feature = "boosty"))]
+    {
+        log::info!("{}", fl!("oss-sponsorship-message"));
+        log::info!("{}: {}", fl!("support-link"), fl!("support-url"));
+    }
+
+    println!();
+}
+
 #[tokio::main]
 async fn main() {
     // Initialize i18n first
     init_clap_rich_formatter_localizer();
     lang::init_localizer();
 
-    let env = Env::new().filter_or("LOG_LEVEL", "info");
-    env_logger::Builder::from_env(env).init();
+    let env = Env::new()
+        .filter_or("LOG_LEVEL", "info")
+        .write_style_or("LOG_STYLE", "auto");
+    env_logger::Builder::from_env(env)
+        .format_timestamp(Some(env_logger::TimestampPrecision::Seconds))
+        .format_module_path(false)
+        .format_target(false)
+        .format_source_path(false)
+        .init();
 
     // Use the i18n-aware parsing method
     let cli = match Cli::try_parse() {
@@ -219,6 +245,9 @@ async fn main() {
             }
 
             log::info!("{}", fl!("parse-mode", parse_mode = format!("{:?}", config.parse_mode)));
+
+            print_sponsorship_message();
+
             log::info!("{}", fl!("syslog-listening", host = config.syslog_host.clone(), port = config.syslog_port));
 
             let bot = telegram::init_bot(&config);

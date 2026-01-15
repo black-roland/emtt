@@ -32,8 +32,21 @@ parse-mode-none = None
 parse-mode-html = HTML
 parse-mode-markdown = Markdown
 
+# Sponsorship messages
+oss-sponsorship-message =
+  If EMtT has been useful to you, consider buying the author a coffee! Your gratitude is appreciated!
+
+boosty-sponsorship-message =
+  Thank you for supporting the project! Full documentation is available on Boosty.
+
+support-link = Support the project
+documentation-link = Documentation
+
+support-url = https://mansmarthome.info/donate/?utm_source=emtt&utm_medium=app&utm_campaign=oss
+boosty-url = https://boosty.to/mansmarthome?utm_source=emtt&utm_medium=app&utm_campaign=boosty
+
 # Log messages
-starting-syslog-mode = Starting EMtT in syslog mode
+starting-syslog-mode = Starting EMtT in syslog mode...
 telegram-chat-id = Telegram chat ID: { $chat_id }
 forward-dm = Forward direct messages: { $dm }
 forward-channel = Forward channel messages: { $channel }

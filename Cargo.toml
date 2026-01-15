@@ -20,4 +20,7 @@ i18n-embed = { version = "0.16.0", features = ["fluent-system", "desktop-request
 i18n-embed-fl = "0.10"
 unic-langid = "0.9.5"
 rust-embed = "8.5.0"
-once_cell = "1.21.0" # Add this line
+once_cell = "1.21.0"
+
+[features]
+boosty = []
