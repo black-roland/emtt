@@ -1,8 +1,10 @@
 # Метаданные приложения
 app-name = Easy Meshtastic to Telegram
-app-description = Мост Easy Meshtastic to Telegram
+app-description = Мост между Meshtastic и Telegram
 app-long-description =
   Easy Meshtastic to Telegram
+
+  Пересылает сообщения из сети Meshtastic в Telegram чаты.
 
   Страница проекта: https://github.com/black-roland/emtt
   Лицензия: MPL 2.0
@@ -19,7 +21,7 @@ arg-chat-id = ID чата Telegram
 arg-dm = Пересылать личные сообщения
 arg-channel = Пересылать сообщения из каналов
 arg-template = Шаблон сообщения
-arg-parse-mode = Режим парсинга сообщений
+arg-parse-mode = Режим обработки Telegram-сообщений
 arg-syslog-host = Хост сервера syslog
 arg-syslog-port = Порт сервера syslog
 
@@ -27,17 +29,17 @@ arg-syslog-port = Порт сервера syslog
 true-value = да
 false-value = нет
 
-# Режимы парсинга
-parse-mode-none = Без форматирования
+# Режимы обработки
+parse-mode-none = Обычный текст
 parse-mode-html = HTML
 parse-mode-markdown = Markdown
 
-# Сообщения о спонсорстве
+# Сообщения о поддержке проекта
 oss-sponsorship-message =
-    Если EMtT оказался полезным, вы можете угостить автора чашечкой кофе. Ваша благодарность ценится!
+  Если EMtT оказался полезен, вы можете угостить автора чашечкой кофе! Ваша поддержка очень важна!
 
 boosty-sponsorship-message =
-    Спасибо за поддержку проекта! Полная документация доступна на Boosty.
+  Спасибо за поддержку проекта! Полная документация доступна на Boosty.
 
 support-link = Поддержать проект
 documentation-link = Документация
@@ -52,23 +54,23 @@ telegram-chat-id = ID чата Telegram: { $chat_id }
 forward-dm = Пересылка личных сообщений: { $dm }
 forward-channel = Пересылка сообщений из канала: { $channel }
 channel-disabled = Пересылка из канала отключена
-parse-mode = Режим парсинга по умолчанию: { $parse_mode }
-syslog-listening = Syslog слушает на { $host }:{ $port }
+parse-mode = Режим обработки по умолчанию: { $parse_mode }
+syslog-listening = Ожидание syslog-сообщений на { $host }:{ $port }
 syslog-server = Запуск сервера syslog...
-ignoring-range-test = Игнорируем range test от { $from }, id { $id }
-no-handle-info = Нет информации об отправителе для сообщения с id: { $id }
-no-via-info = Нет информации о шлюзе для сообщения с id: { $id }, через: { $via }
-stale-handle-info = Устаревшая информация об отправителе для сообщения с id: { $id }
-skipping-mqtt = Пропуск текста, пересланного через MQTT, для сообщения с id: { $id }
-ignoring-text-msg = Пропуск сообщения с id: { $id }, канал: { $ch }, получатель: { $to }
+ignoring-range-test = Игнорирую range test от { $from } (ID: { $id })
+no-handle-info = Нет информации об отправителе для сообщения с ID: { $id }
+no-via-info = Нет информации о шлюзе для сообщения с ID: { $id }, через: { $via }
+stale-handle-info = Устаревшая информация об отправителе для сообщения с ID: { $id }
+skipping-mqtt = Пропускаю сообщение, пересланное через MQTT, для сообщения с ID: { $id }
+ignoring-text-msg = Пропускаю текстовое сообщение с ID: { $id }, канал: { $ch }, получатель: { $to }
 forwarded-to-telegram = Сообщение переслано в Telegram (от { $from }): { $message }
 failed-to-render = Ошибка рендеринга шаблона: { $error }
-failed-to-send = Ошибка отправки сообщения в Telegram: { $error }
+failed-to-send = Ошибка отправки в Telegram: { $error }
 message-content = Содержимое сообщения: { $content }
 processed-nodeinfo = Обработана информация об узле: { $longname } ({ $shortname }) - { $id }
 syslog-binding = Сервер syslog ожидает подключений на { $addr }
-received-text-msg = Получено текстовое сообщение от { $from }, id { $id }: { $text }
-recv-error = Ошибка приёма: { $error }
-invalid-utf8 = Некорректный UTF-8 от { $peer }
-failed-to-parse-syslog = Ошибка разбора syslog: { $error }, сырые данные: { $raw }
+received-text-msg = Получено текстовое сообщение от { $from } (ID: { $id }): { $text }
+recv-error = Ошибка получения: { $error }
+invalid-utf8 = Некорректные данные UTF-8 от { $peer }
+failed-to-parse-syslog = Ошибка разбора syslog-сообщения: { $error }, исходные данные: { $raw }
 unhandled-syslog = Необработанное syslog-сообщение: { $message }

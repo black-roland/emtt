@@ -1,8 +1,10 @@
 # Application metadata
 app-name = Easy Meshtastic to Telegram
-app-description = Easy Meshtastic to Telegram bridge
+app-description = Bridge between Meshtastic and Telegram
 app-long-description =
   Easy Meshtastic to Telegram
+
+  Forwards messages from Meshtastic network to Telegram chats.
 
   Project page: https://github.com/black-roland/emtt
   License: MPL 2.0
@@ -19,7 +21,7 @@ arg-chat-id = Telegram chat ID
 arg-dm = Forward direct messages
 arg-channel = Forward channel messages
 arg-template = Message template
-arg-parse-mode = Parse mode for messages
+arg-parse-mode = Telegram message parse mode
 arg-syslog-host = Syslog server host
 arg-syslog-port = Syslog server port
 
@@ -28,46 +30,46 @@ true-value = yes
 false-value = no
 
 # Parse modes
-parse-mode-none = None
+parse-mode-none = Plain text
 parse-mode-html = HTML
 parse-mode-markdown = Markdown
 
 # Sponsorship messages
 oss-sponsorship-message =
-  If EMtT has been useful to you, consider buying the author a coffee! Your gratitude is appreciated!
+  If EMtT has been useful to you, consider buying the author a coffee! Your support is appreciated!
 
 boosty-sponsorship-message =
-  Thank you for supporting the project! Full documentation is available on Boosty.
+  Thank you for supporting the project! Complete documentation is available on Boosty.
 
 support-link = Support the project
 documentation-link = Documentation
 
-support-url = https://mansmarthome.info/donate/?utm_source=emtt&utm_medium=app&utm_campaign=oss
+support-url = https://dalink.to/mansmarthome?utm_source=emtt&utm_medium=app&utm_campaign=oss
 boosty-url = https://boosty.to/mansmarthome?utm_source=emtt&utm_medium=app&utm_campaign=boosty
 
 # Log messages
 starting-syslog-mode = Starting EMtT in syslog mode...
 telegram-chat-id = Telegram chat ID: { $chat_id }
-forward-dm = Forward direct messages: { $dm }
-forward-channel = Forward channel messages: { $channel }
-channel-disabled = Channel forwarding disabled
+forward-dm = Forwarding direct messages: { $dm }
+forward-channel = Forwarding channel messages: { $channel }
+channel-disabled = Channel forwarding is disabled
 parse-mode = Default parse mode: { $parse_mode }
-syslog-listening = Syslog listening on { $host }:{ $port }
-syslog-server = Launching syslog server...
-ignoring-range-test = Ignoring range test message from { $from } id { $id }
-no-handle-info = No handle info for text msg id: { $id }
-no-via-info = No via info for text msg id: { $id }, via: { $via }
-stale-handle-info = Stale handle info for text msg id: { $id }
-skipping-mqtt = Skipping MQTT-forwarded text for msg id: { $id }
-ignoring-text-msg = Ignoring text msg id: { $id }, ch: { $ch }, to: { $to }
-forwarded-to-telegram = Forwarded message to Telegram (from { $from }): { $message }
+syslog-listening = Listening for syslog messages on { $host }:{ $port }
+syslog-server = Starting syslog server...
+ignoring-range-test = Ignoring range test message from { $from } (ID: { $id })
+no-handle-info = No sender information for message ID: { $id }
+no-via-info = No gateway information for message ID: { $id }, via: { $via }
+stale-handle-info = Stale sender information for message ID: { $id }
+skipping-mqtt = Skipping MQTT-forwarded text for message ID: { $id }
+ignoring-text-msg = Ignoring text message ID: { $id }, channel: { $ch }, to: { $to }
+forwarded-to-telegram = Message forwarded to Telegram (from { $from }): { $message }
 failed-to-render = Failed to render template: { $error }
 failed-to-send = Failed to send message to Telegram: { $error }
 message-content = Message content: { $content }
-processed-nodeinfo = Processed nodeinfo: { $longname } ({ $shortname }) - { $id }
+processed-nodeinfo = Processed node info: { $longname } ({ $shortname }) - { $id }
 syslog-binding = Syslog server listening on { $addr }
-received-text-msg = Received text msg from { $from } id { $id }: { $text }
-recv-error = Recv error: { $error }
-invalid-utf8 = Invalid UTF-8 from { $peer }
-failed-to-parse-syslog = Failed to parse syslog: { $error }, raw: { $raw }
+received-text-msg = Received text message from { $from } (ID: { $id }): { $text }
+recv-error = Receive error: { $error }
+invalid-utf8 = Invalid UTF-8 data from { $peer }
+failed-to-parse-syslog = Failed to parse syslog message: { $error }, raw data: { $raw }
 unhandled-syslog = Unhandled syslog message: { $message }
