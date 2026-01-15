@@ -236,7 +236,8 @@ where
 
         let text = caps[3].to_string();
         let from_hex = format!("0x{:08x}", from);
-        info!("Received text msg from {} id 0x{:08x}: {}", from_hex, id, text);
+        let formatted_id = format!("0x{:08x}", id);
+        info!("{}", fl!("received-text-msg", from = from_hex.as_str(), id = formatted_id.as_str(), text = text.as_str()));
 
         let range_test_re = Regex::new(r"^seq \d+$").unwrap();
         if range_test_re.is_match(&text) {

@@ -66,6 +66,7 @@ failed-to-send = Failed to send message to Telegram: { $error }
 message-content = Message content: { $content }
 processed-nodeinfo = Processed nodeinfo: { $longname } ({ $shortname }) - { $id }
 syslog-binding = Syslog server listening on { $addr }
+received-text-msg = Received text msg from { $from } id { $id }: { $text }
 recv-error = Recv error: { $error }
 invalid-utf8 = Invalid UTF-8 from { $peer }
 failed-to-parse-syslog = Failed to parse syslog: { $error }, raw: { $raw }
