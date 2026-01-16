@@ -44,9 +44,8 @@ boosty-sponsorship-message =
 support-link = Поддержать проект
 documentation-link = Документация
 
-# UTM-enhanced URLs
 support-url = https://mansmarthome.info/donate/?utm_source=emtt&utm_medium=app&utm_campaign=oss
-boosty-url = https://boosty.to/mansmarthome?utm_source=emtt&utm_medium=app&utm_campaign=boosty
+boosty-url = https://boosty.to/mansmarthome/posts/ca2ddb88-d808-419b-8faf-5d5619f66b95?utm_source=emtt&utm_medium=app&utm_campaign=boosty
 
 # Логи
 starting-syslog-mode = Запуск EMtT в режиме syslog...

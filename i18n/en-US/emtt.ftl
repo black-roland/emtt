@@ -45,7 +45,7 @@ support-link = Support the project
 documentation-link = Documentation
 
 support-url = https://dalink.to/mansmarthome?utm_source=emtt&utm_medium=app&utm_campaign=oss
-boosty-url = https://boosty.to/mansmarthome?utm_source=emtt&utm_medium=app&utm_campaign=boosty
+boosty-url = https://boosty.to/mansmarthome/posts/ca2ddb88-d808-419b-8faf-5d5619f66b95?utm_source=emtt&utm_medium=app&utm_campaign=boosty
 
 # Log messages
 starting-syslog-mode = Starting EMtT in syslog mode...
