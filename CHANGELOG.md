@@ -7,9 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+### Updated
 
 - Periodic cleanup of orphaned handle infos to avoid unbounded memory usage growth during runtime.
+- Syslog messages parsing performance optimizations.
 
 ## [1.0.0] - 2026-01-17
 

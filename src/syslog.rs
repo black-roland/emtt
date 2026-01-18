@@ -17,6 +17,24 @@ use super::MessageData;
 // Import the fl! macro from the crate root (which re-exports it from lang)
 use crate::fl;
 
+use once_cell::sync::Lazy;
+
+static NODEINFO_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"Update changed=\d+ user (.+)/([^,/]+), id=0x([0-9a-fA-F]+), channel=\d+").unwrap()
+});
+
+static HANDLE_RECEIVED_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"^handleReceived\(([^)]+)\) \((.*)\)$").unwrap()
+});
+
+static TEXT_MSG_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"Received text msg from=0x([0-9a-fA-F]+), id=0x([0-9a-fA-F]+), msg=(.+)").unwrap()
+});
+
+static RANGE_TEST_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"^seq \d+$").unwrap()
+});
+
 #[derive(Clone)]
 struct NodeInfo {
     shortname: String,
@@ -93,9 +111,7 @@ async fn parse_and_store_nodeinfo(
     handle_infos: &Arc<Mutex<HashMap<u32, HandleInfo>>>,
     known_nodes: &Arc<Mutex<HashMap<u32, NodeInfo>>>,
 ) -> bool {
-    let re = Regex::new(r"Update changed=\d+ user (.+)/([^,/]+), id=0x([0-9a-fA-F]+), channel=\d+").unwrap();
-
-    if let Some(caps) = re.captures(message) {
+    if let Some(caps) = NODEINFO_RE.captures(message) {
         let longname = caps[1].to_string();
         let shortname = caps[2].to_string();
         let id = match u32::from_str_radix(&caps[3], 16) {
@@ -133,9 +149,7 @@ async fn parse_and_store_handle_received(
     ident: &str,
     handle_infos: &Arc<Mutex<HashMap<u32, HandleInfo>>>,
 ) -> bool {
-    let re = Regex::new(r"^handleReceived\(([^)]+)\) \((.*)\)$").unwrap();
-
-    if let Some(caps) = re.captures(message) {
+    if let Some(caps) = HANDLE_RECEIVED_RE.captures(message) {
         // h_type = &caps[1]; not used
         let mut content = caps[2].to_string();
         content = content.replace(',', " ").replace(" = ", "=");
@@ -221,9 +235,7 @@ where
     F: Fn(MessageData) -> Fut,
     Fut: Future<Output = ()>,
 {
-    let re = Regex::new(r"Received text msg from=0x([0-9a-fA-F]+), id=0x([0-9a-fA-F]+), msg=(.+)").unwrap();
-
-    if let Some(caps) = re.captures(message) {
+    if let Some(caps) = TEXT_MSG_RE.captures(message) {
         let from = match u32::from_str_radix(&caps[1], 16) {
             Ok(f) => f,
             Err(_) => return false,
@@ -239,8 +251,7 @@ where
         let formatted_id = format!("0x{:08x}", id);
         info!("{}", fl!("received-text-msg", from = from_hex.as_str(), id = formatted_id.as_str(), text = text.as_str()));
 
-        let range_test_re = Regex::new(r"^seq \d+$").unwrap();
-        if range_test_re.is_match(&text) {
+        if RANGE_TEST_RE.is_match(&text) {
             debug!("{}", fl!("ignoring-range-test", from = from_hex, id = format!("0x{:08x}", id)));
             return true;
         }
