@@ -7,7 +7,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use log::{debug, info, warn};
+use log::{debug, info, trace, warn};
 use regex::Regex;
 use tokio::net::UdpSocket;
 use tokio::sync::Mutex;
@@ -405,11 +405,6 @@ where
             }
         };
 
-        debug!(
-            "Syslog message: ident: {}, ip: {}, message: {}",
-            ident, peer, message
-        );
-
         if parse_and_store_nodeinfo(&message, &handle_infos, &known_nodes).await {
             continue;
         }
@@ -432,6 +427,6 @@ where
         }
 
         // If none matched, log verbose
-        debug!("{}", fl!("unhandled-syslog", message = message));
+        trace!("{}", fl!("unhandled-syslog", message = message));
     }
 }
