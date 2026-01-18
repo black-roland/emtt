@@ -358,6 +358,27 @@ where
 
     info!("{}", fl!("syslog-binding", addr = addr));
 
+    // Spawn periodic cleanup task
+    let handle_infos_clone = handle_infos.clone();
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(tokio::time::Duration::from_secs(60)).await; // Every 1 minute
+            let current_time = now();
+            let mut handles = handle_infos_clone.lock().await;
+            let mut to_remove: Vec<u32> = Vec::new();
+            for (id, handle) in handles.iter_mut() {
+                handle.vias.retain(|_, via| current_time - via.timestamp <= 180);
+                if handle.vias.is_empty() {
+                    to_remove.push(*id);
+                }
+            }
+            for id in to_remove {
+                handles.remove(&id);
+                debug!("Cleaned up stale handle info for id: 0x{:08x}", id);
+            }
+        }
+    });
+
     let mut buf = [0; 1024];
     loop {
         let (len, peer) = match socket.recv_from(&mut buf).await {
