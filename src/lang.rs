@@ -39,4 +39,7 @@ pub fn init_localizer() {
     DefaultLocalizer::new(&*LANGUAGE_LOADER, &Localizations)
         .select(&requested_languages)
         .unwrap();
+    LANGUAGE_LOADER.with_bundles_mut(|bundle| {
+        bundle.set_use_isolating(false);
+    });
 }
