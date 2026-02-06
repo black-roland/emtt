@@ -55,7 +55,7 @@ enum Commands {
         #[arg(help = fl!("arg-channel"))]
         channel: Option<u32>,
 
-        #[arg(long, env = "TELEGRAM_TEMPLATE", default_value = "<b>{{ from | e }}</b> (via <i>{{ via | e }}</i>)\nSNR: {{ snr | default(\"N/A\") }} | RSSI: {{ rssi | default(\"N/A\") }} | Hops: {{ hops_away | default(\"N/A\") }}\n<blockquote>{{ text | e }}</blockquote>")]
+        #[arg(long, env = "TELEGRAM_TEMPLATE", default_value = "<b>{{ from | e }}</b> (via <i>{{ via }}</i>)\n<blockquote>{{ text | e }}</blockquote>")]
         #[arg(help = fl!("arg-template"))]
         template: String,
 
