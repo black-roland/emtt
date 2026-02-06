@@ -4,5 +4,6 @@ header:
 
   paths:
     - "src/**/*.rs"
+    - "installer.nsi"
 
   comment: on-failure
