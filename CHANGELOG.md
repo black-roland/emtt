@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Webhook output support (in addition to or instead of Telegram): `--webhook-url` / `WEBHOOK_URL`.
+
 ### Updated
 
 - Simplify the default Telegram template by removing SNR, RSSI and hops away.

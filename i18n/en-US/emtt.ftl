@@ -24,6 +24,7 @@ arg-template = Message template
 arg-parse-mode = Telegram message parse mode
 arg-syslog-host = Syslog server host
 arg-syslog-port = Syslog server port
+arg-webhook-url = Webhook URL for forwarding messages (optional, in addition to or instead of Telegram)
 
 # Boolean values
 true-value = yes
@@ -65,6 +66,7 @@ ignoring-text-msg = Ignoring text message ID: { $id }, channel: { $ch }, to: { $
 forwarded-to-telegram = Message forwarded to Telegram (from { $from }): { $message }
 failed-to-render = Failed to render template: { $error }
 failed-to-send = Failed to send message to Telegram: { $error }
+failed-to-send-webhook = Failed to send message to webhook: { $error }
 message-content = Message content: { $content }
 processed-nodeinfo = Processed node info: { $longname } ({ $shortname }) - { $id }
 syslog-binding = Syslog server listening on { $addr }
@@ -73,3 +75,7 @@ recv-error = Receive error: { $error }
 invalid-utf8 = Invalid UTF-8 data from { $peer }
 failed-to-parse-syslog = Failed to parse syslog message: { $error }, raw data: { $raw }
 unhandled-syslog = Unhandled syslog message: { $message }
+webhook-enabled = Webhook forwarding enabled to: { $url }
+webhook-disabled = Webhook forwarding disabled
+forwarded-to-webhook = Message forwarded to webhook (from { $from }): { $message }
+no-output-configured = At least one output (Telegram or webhook) must be configured

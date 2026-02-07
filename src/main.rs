@@ -6,6 +6,8 @@ use clap::{Parser, Subcommand, ValueEnum};
 use clap_i18n_richformatter::{clap_i18n, ClapI18nRichFormatter, init_clap_rich_formatter_localizer};
 use env_logger::Env;
 use minijinja::{context, Environment};
+use reqwest::Client;
+use serde::Serialize;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::LazyLock;
@@ -14,8 +16,9 @@ use teloxide::types::ParseMode;
 mod lang;
 mod syslog;
 mod telegram;
+mod webhook;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct MessageData {
     from: String,
     via: String,
@@ -34,11 +37,15 @@ enum Commands {
     Syslog {
         #[arg(long, env = "TELEGRAM_BOT_TOKEN")]
         #[arg(help = fl!("arg-bot-token"))]
-        bot_token: String,
+        bot_token: Option<String>,
 
         #[arg(long, env = "TELEGRAM_CHAT_ID")]
         #[arg(help = fl!("arg-chat-id"))]
-        chat_id: i64,
+        chat_id: Option<i64>,
+
+        #[arg(long, env = "WEBHOOK_URL")]
+        #[arg(help = fl!("arg-webhook-url"))]
+        webhook_url: Option<String>,
 
         #[arg(
             long,
@@ -74,8 +81,8 @@ enum Commands {
 }
 // --- End Commands definition ---
 
-pub static HELP_HEADING: LazyLock<String> = LazyLock::new(|| fl!("command-syslog")); // Or another appropriate heading key
-pub static ARG_HELP_HEADING: LazyLock<String> = LazyLock::new(|| fl!("arg-bot-token")); // Use a general heading or specific one if needed
+pub static HELP_HEADING: LazyLock<String> = LazyLock::new(|| fl!("command-syslog"));
+pub static ARG_HELP_HEADING: LazyLock<String> = LazyLock::new(|| fl!("arg-bot-token"));
 pub static HELP_TEMPLATE: LazyLock<String> = LazyLock::new(|| {
     format!(
         "\
@@ -100,7 +107,7 @@ fn localize_bool(value: bool) -> String {
 }
 
 #[derive(Parser)]
-#[clap_i18n] // Apply this to the main struct
+#[clap_i18n]
 #[command(name = "emtt")]
 #[command(version = env!("CARGO_PKG_VERSION"))]
 #[command(about = fl!("app-description"))]
@@ -122,11 +129,11 @@ enum ParseModeOpt {
     Markdown,
 }
 
-
 #[derive(Clone)]
 struct Config {
-    bot_token: String,
-    chat_id: i64,
+    bot_token: Option<String>,
+    chat_id: Option<i64>,
+    webhook_url: Option<String>,
     dm: bool,
     channel: Option<u32>,
     template: String,
@@ -221,6 +228,7 @@ async fn main() {
         Commands::Syslog {
             bot_token,
             chat_id,
+            webhook_url,
             dm,
             channel,
             template,
@@ -232,6 +240,7 @@ async fn main() {
             let config = Config {
                 bot_token,
                 chat_id,
+                webhook_url,
                 dm,
                 channel,
                 template,
@@ -240,8 +249,20 @@ async fn main() {
                 syslog_port,
             };
 
+            let use_telegram = config.bot_token.is_some() && config.chat_id.is_some();
+            let use_webhook = config.webhook_url.is_some();
+
+            if !use_telegram && !use_webhook {
+                log::error!("{}", fl!("no-output-configured"));
+                return;
+            }
+
             log::info!("{}", fl!("starting-syslog-mode"));
-            log::info!("{}", fl!("telegram-chat-id", chat_id = config.chat_id));
+
+            if use_telegram {
+                log::info!("{}", fl!("telegram-chat-id", chat_id = config.chat_id.unwrap()));
+                log::info!("{}", fl!("parse-mode", parse_mode = format!("{:?}", config.parse_mode)));
+            }
 
             log::info!("{}", fl!("forward-dm", dm = localize_bool(config.dm)));
 
@@ -251,58 +272,92 @@ async fn main() {
                 log::info!("{}", fl!("channel-disabled"));
             }
 
-            log::info!("{}", fl!("parse-mode", parse_mode = format!("{:?}", config.parse_mode)));
+            if use_webhook {
+                log::info!("{}", fl!("webhook-enabled", url = config.webhook_url.as_ref().unwrap()));
+            } else {
+                log::info!("{}", fl!("webhook-disabled"));
+            }
 
             print_sponsorship_message();
 
             log::info!("{}", fl!("syslog-listening", host = config.syslog_host.clone(), port = config.syslog_port));
 
-            let bot = telegram::init_bot(&config);
+            let bot = if use_telegram {
+                Some(telegram::init_bot(config.bot_token.clone().unwrap()))
+            } else {
+                None
+            };
+
+            let http_client = Client::new();
+
             let sender = {
                 let bot = bot.clone();
                 let chat_id = config.chat_id;
                 let template = config.template.clone();
                 let parse_mode_opt = config.parse_mode;
+                let webhook_url = config.webhook_url.clone();
+                let use_telegram = use_telegram;
+                let use_webhook = use_webhook;
+                let http_client = http_client.clone();
 
                 move |data: MessageData| {
                     let bot = bot.clone();
                     let chat_id = chat_id;
                     let template = template.clone();
                     let parse_mode_opt = parse_mode_opt;
+                    let webhook_url = webhook_url.clone();
+                    let http_client = http_client.clone();
 
                     Box::pin(async move {
-                        let env = Environment::new();
-                        let ctx = context! {
-                            from => data.from,
-                            via => data.via,
-                            text => data.text,
-                            snr => data.snr,
-                            rssi => data.rssi,
-                            hops_away => data.hops_away,
-                        };
+                        if use_telegram {
+                            let env = Environment::new();
+                            let ctx = context! {
+                                from => data.from,
+                                via => data.via,
+                                text => data.text,
+                                snr => data.snr,
+                                rssi => data.rssi,
+                                hops_away => data.hops_away,
+                            };
 
-                        let rendered = match env.render_str(&template, ctx) {
-                            Ok(s) => s,
-                            Err(e) => {
+                            let rendered_result = env.render_str(&template, ctx);
+
+                            if let Ok(rendered) = rendered_result {
+                                let parse_mode = match parse_mode_opt {
+                                    ParseModeOpt::None => None,
+                                    ParseModeOpt::Html => Some(ParseMode::Html),
+                                    ParseModeOpt::Markdown => Some(ParseMode::MarkdownV2),
+                                };
+
+                                match telegram::send_message(
+                                    bot.as_ref().unwrap(),
+                                    chat_id.unwrap(),
+                                    &rendered,
+                                    parse_mode,
+                                )
+                                .await
+                                {
+                                    Err(err) => {
+                                        log::warn!(
+                                            "{}\n{}",
+                                            fl!("failed-to-send", error = err.to_string()),
+                                            fl!("message-content", content = rendered)
+                                        );
+                                    }
+                                    Ok(_) => {
+                                        log::debug!(
+                                            "{}",
+                                            fl!("forwarded-to-telegram", from = data.from.clone(), message = rendered)
+                                        );
+                                    }
+                                }
+                            } else if let Err(e) = rendered_result {
                                 log::warn!("{}", fl!("failed-to-render", error = e.to_string()));
-                                return;
                             }
-                        };
+                        }
 
-                        let parse_mode = match parse_mode_opt {
-                            ParseModeOpt::None => None,
-                            ParseModeOpt::Html => Some(ParseMode::Html),
-                            ParseModeOpt::Markdown => Some(ParseMode::MarkdownV2),
-                        };
-
-                        if let Err(err) = telegram::send_message(&bot, chat_id, &rendered, parse_mode).await {
-                            log::warn!(
-                                "{}\n{}",
-                                fl!("failed-to-send", error = err.to_string()),
-                                fl!("message-content", content = rendered)
-                            );
-                        } else {
-                            log::debug!("{}", fl!("forwarded-to-telegram", from = data.from, message = rendered));
+                        if use_webhook {
+                            webhook::send_message(&http_client, webhook_url.as_ref().unwrap(), &data).await;
                         }
                     }) as Pin<Box<dyn Future<Output = ()> + Send>>
                 }

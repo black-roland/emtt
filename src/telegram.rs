@@ -2,13 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use teloxide::{prelude::*, Bot};
-use teloxide::types::{ChatId, ParseMode};
+use teloxide::{prelude::*, types::{ChatId, ParseMode}};
 
-use crate::Config;
-
-pub fn init_bot(config: &Config) -> Bot {
-    Bot::new(config.bot_token.clone())
+pub fn init_bot(token: String) -> Bot {
+    Bot::new(token)
 }
 
 pub async fn send_message(
