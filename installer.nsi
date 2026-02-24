@@ -44,6 +44,9 @@ Var params
 !define MUI_ABORTWARNING
 !define MUI_ICON "${NSISDIR}\Contrib\Graphics\Icons\modern-install.ico"
 !define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
+!define MUI_FINISHPAGE_RUN
+!define MUI_FINISHPAGE_RUN_FUNCTION "LaunchLink"
+!define MUI_FINISHPAGE_RUN_TEXT "Запустить Easy Meshtastic to Telegram"
 
 ; Страницы установщика
 !insertmacro MUI_PAGE_WELCOME
@@ -167,4 +170,9 @@ Function ConfigPageLeave
   ${If} $proxyurl != ""
     StrCpy $params '$params --proxy "$proxyurl"'
   ${EndIf}
+FunctionEnd
+
+Function LaunchLink
+  ; Запускаем через специальный ярлык — все параметры ($params) уже внутри него
+  ExecShell "" "$SMPROGRAMS\EMtT\Easy Meshtastic to Telegram.lnk"
 FunctionEnd
