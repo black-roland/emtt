@@ -87,7 +87,7 @@ flowchart LR
 * **Готовые сборки и приоритетная поддержка:** доступны для подписчиков [Boosty](https://boosty.to/mansmarthome/posts/ca2ddb88-d808-419b-8faf-5d5619f66b95).
 * **Вопросы и обсуждения:** присоединяйтесь к моему [Telegram-чату](https://t.me/+BBhPhVEURE1iZTZi).
 
-[releases-shield]: https://img.shields.io/badge/1.2.1-версия-blue?logo=github&style=flat-square&cacheSeconds=86400
+[releases-shield]: https://img.shields.io/badge/1.2.2-версия-blue?logo=github&style=flat-square&cacheSeconds=86400
 [releases]: https://github.com/black-roland/emtt/blob/main/LICENSE
 [telegram-shield]: https://img.shields.io/badge/Telegram-чат-blue?style=flat-square&logo=telegram
 [telegram]: https://t.me/+BBhPhVEURE1iZTZi

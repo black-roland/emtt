@@ -11,7 +11,7 @@ RUN dnf install -y \
     && dnf clean all
 
 # Install latest Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.93.1
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.94.1
 
 # Add cargo/rust to PATH
 ENV PATH="/root/.cargo/bin:${PATH}"

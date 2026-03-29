@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026-03-29
+
+### Added
+
+- Support for custom [Telegram Bot API](https://github.com/tdlib/telegram-bot-api) endpoints.
+
+### Fixed
+
+- Handling of MQTT messages: EMtT now correctly ignores messages from a connected MQTT server and processes radio messages only.
+
 ## [1.2.1] - 2026-02-22
 
 ### Added
