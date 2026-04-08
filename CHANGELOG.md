@@ -1,63 +1,63 @@
-# Changelog
+# Журнал изменений
 
-All notable changes to this project will be documented in this file.
+Все значимые изменения будут документироваться в этом файле.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Формат основан на [«Keep a Changelog»](https://keepachangelog.com/ru/1.1.0/),
+и этот проект придерживается [семантического версионирования](https://semver.org/spec/v2.0.0.html).
 
 ## [1.2.2] - 2026-03-29
 
-### Added
+### Добавлено
 
-- Support for custom [Telegram Bot API](https://github.com/tdlib/telegram-bot-api) endpoints.
+- Поддержка пользовательских конечных точек [Telegram Bot API](https://github.com/tdlib/telegram-bot-api).
 
-### Fixed
+### Исправлено
 
-- Handling of MQTT messages: EMtT now correctly ignores messages from a connected MQTT server and processes radio messages only.
+- Обработка MQTT-сообщений: EMtT теперь корректно игнорирует сообщения от подключённого MQTT-сервера и обрабатывает только радиосообщения.
 
 ## [1.2.1] - 2026-02-22
 
-### Added
+### Добавлено
 
-- `--log-level` / `-l` CLI argument to set logging verbosity (`error`, `warn`, `info`, `debug`, `trace`).
+- Аргумент командной строки `--log-level` / `-l` для установки уровня детализации логирования (`error`, `warn`, `info`, `debug`, `trace`).
 
-### Updated
+### Изменено
 
-- Default log level changed to `debug` (previously `info`).
+- Уровень логирования по умолчанию изменён на `debug` (ранее был `info`).
 
 ## [1.2.0] - 2026-02-17
 
-### Added
+### Добавлено
 
-- Explicit proxy support for both Telegram and webhooks.
+- Явная поддержка прокси как для Telegram, так и для вебхуков.
 
 ## [1.1.0] - 2026-02-07
 
-### Added
+### Добавлено
 
-- Webhook output support (in addition to or instead of Telegram): `--webhook-url` / `WEBHOOK_URL`.
+- Поддержка вывода через вебхук (дополнительно к Telegram или вместо него): `--webhook-url` / `WEBHOOK_URL`.
 
-### Updated
+### Изменено
 
-- Simplify the default Telegram template by removing SNR, RSSI and hops away.
+- Упрощён стандартный шаблон Telegram путём удаления SNR, RSSI и количества прыжков.
 
 ## [1.0.2] - 2026-01-19
 
-### Fixed
+### Исправлено
 
-- Eliminate the unwanted symbols in Windows console logs (disable the addition of Unicode bidirectional isolate characters).
+- Устранение нежелательных символов в логах консоли Windows (отключено добавление символов двунаправленного изолятора Unicode).
 
 ## [1.0.1] - 2026-01-18
 
-### Updated
+### Изменено
 
-- Periodic cleanup of orphaned handle infos to avoid unbounded memory usage growth during runtime.
-- Syslog messages parsing performance optimizations.
+- Периодическая очистка информации об осиротевших дескрипторах для предотвращения неограниченного роста использования памяти во время работы.
+- Оптимизация производительности разбора сообщений syslog.
 
 ## [1.0.0] - 2026-01-17
 
-### Added
+### Добавлено
 
-- Syslog server to accept node's logs.
-- Syslog messages parsing.
-- Telegram forwarding.
+- Syslog-сервер для приёма логов узлов.
+- Разбор сообщений syslog.
+- Пересылка в Telegram.
