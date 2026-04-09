@@ -1,47 +1,42 @@
 # Easy Meshtastic to Telegram
 
 [![Версия][releases-shield]][releases]
-[![Telegram][telegram-shield]][telegram]
 [![Boosty][boosty-shield]][boosty]
+[![Telegram][telegram-shield]][telegram]
 
-**EMtT** — это простой и надёжный мост, который пересылает сообщения из радиосети Meshtastic прямо в Telegram. Никаких сложных настроек и никакого MQTT. Просто включите Wi-Fi на ноде и укажите адрес сервера.
+**EMtT** — это простой мост, который пересылает сообщения из радиосети Meshtastic прямо в Telegram. Никакого MQTT, никаких лишних сложностей.
 
-Проект основан на коде [петербургского публичного моста](https://mansmarthome.info/posts/radio/kak-ia-sviazyval-meshtastic-i-telegram-istoriia-pietierburghskogho-mosta/), который работает с 2023 года. Теперь вы тоже можете развернуть свой собственный мост за несколько минут.
+Проект основан на коде [петербургского моста](https://mansmarthome.info/posts/radio/kak-ia-sviazyval-meshtastic-i-telegram-istoriia-pietierburghskogho-mosta/?utm_source=github&utm_medium=referral&utm_campaign=emtt), который работает с 2023 года. Подробный рассказ о возможностях, сценариях использования и демонстрация работы EMtT [доступны в блоге](https://mansmarthome.info/posts/radio/emtt-most-meshtastic-v-telegram-uviedomlieniia-biez-intiernieta/?utm_source=github&utm_medium=referral&utm_campaign=emtt).
 
-### Как это работает
+## Схема работы
 
-Всё, что нужно от вашей Meshtastic-ноды — это возможность отправлять `syslog` через Wi-Fi. EMtT принимает эти сообщения, парсит их и пересылает в Telegram с помощью Bot API.
+EMtT — это по сути сервер для сбора логов (rsyslog). Meshtastic-нода отправляет логи на указанный IP и порт, EMtT парсит их и пересылает в Telegram.
 
 ```mermaid
-flowchart LR
-    A[Нода-отправитель] -->|радиоэфир| B[Meshtastic-шлюз]
-    B -->|syslog по Wi-Fi| C[Сервер с EMtT]
-    C -->|Telegram Bot API| D[Ваш Telegram-чат / бот]
+flowchart TB
+    subgraph A [Сеть Meshtastic]
+        N[Носимая нода] --> G["Нода дома<br><small>(шлюз)</small>"]
+    end
+
+    G -->|syslog| B["Сервер с EMtT<br><small>(NAS, VPS, ПК или одноплатник)</small>"]
+    B -->|Telegram Bot API| C[Telegram]
 ```
 
-### Сценарии использования
+## Установка
 
-1. «Семейный» — для связи с близкими там, где нет сотовой связи. Вы отправляете сообщение на свою вторую Meshtastic-ноду, а ваши близкие могут получить его как обычное сообщение в Telegram. Никаких лишних приложений.
-2. Мониторинговый — чтобы читать местный эфирный чатик, не открывая приложение Meshtastic.
-
-### Установка
-
-Есть два способа получить EMtT — выбирайте наиболее подходящий.
-
-#### Для подписчиков Boosty (готовые сборки)
+### Для подписчиков Boosty (готовые сборки)
 
 Если вы не хотите разбираться с компиляцией и предпочитаете готовое решение, [поддержите проект на Boosty](https://boosty.to/mansmarthome/posts/ca2ddb88-d808-419b-8faf-5d5619f66b95). В благодарность за подписку вы получите доступ к:
 * **Готовым Docker-образам** для архитектур `amd64` (серверы, ПК) и `aarch64` (Raspberry Pi, NAS).
+* **Установщику для Windows** (с GUI) для простой установки и настройки.
 * **Скомпилированным бинарникам** для Linux (`amd64`, `aarch64`).
-* **Установщику для Windows** (GUI) для простой установки и настройки.
 * **Подробной документации** по настройке и использованию.
 
-#### Open Source (сборка из исходников)
+### Open Source (сборка из исходников)
 
 Исходный код полностью открыт на GitHub. Всё, что вам понадобится — это Rust и Cargo.
 
-
-**Инструкция по сборке:**
+**Через Cargo:**
 
 1. Клонируйте репозиторий:
    ```bash
@@ -52,12 +47,20 @@ flowchart LR
    ```bash
    cargo build --release
    ```
-3. Готовый бинарный файл будет находиться в директории `target/release/emtt`. Вы можете скопировать его в удобное место, например, `/usr/local/bin`:
+3. Готовый исполняемый файл будет находиться в директории `target/release/emtt`. Вы можете скопировать его в удобное место, например, `/usr/local/bin`:
    ```bash
    sudo cp target/release/emtt /usr/local/bin/
    ```
 
-### Быстрый запуск
+Через Docker:
+
+```bash
+git clone https://github.com/black-roland/emtt.git
+cd emtt
+docker build -t emtt .
+```
+
+## Быстрый старт
 
 После установки EMtT его нужно просто запустить, передав токен вашего Telegram-бота и ID чата, куда отправлять сообщения.
 
@@ -81,20 +84,24 @@ flowchart LR
 
 Готово! Теперь все личные сообщения, которые получит ваша нода-шлюз, будут дублироваться в Telegram-чат.
 
-### Поддержка и обратная связь
+## Поддержка и обратная связь
 
-* **Баг-репорты и предложения:** пожалуйста, создавайте [issues](https://github.com/black-roland/emtt/issues) на GitHub.
-* **Готовые сборки и приоритетная поддержка:** доступны для подписчиков [Boosty](https://boosty.to/mansmarthome/posts/ca2ddb88-d808-419b-8faf-5d5619f66b95).
-* **Вопросы и обсуждения:** присоединяйтесь к моему [Telegram-чату](https://t.me/+BBhPhVEURE1iZTZi).
+- **Баг-репорты и предложения:** пожалуйста, создавайте [issues](https://github.com/black-roland/emtt/issues) на GitHub.
+- **Готовые сборки и приоритетная поддержка:** доступны для подписчиков [Boosty](https://boosty.to/mansmarthome/posts/ca2ddb88-d808-419b-8faf-5d5619f66b95).
+- **Вопросы и обсуждения:** присоединяйтесь к [Telegram-чату](https://t.me/+BBhPhVEURE1iZTZi).
 
-### Товарные знаки
+## Товарные знаки
 
 Meshtastic® is a registered trademark of Meshtastic LLC. Meshtastic software components are released under various licenses, see [GitHub](https://github.com/meshtastic) for details. No warranty is provided — use at your own risk.
 
 This site is not affiliated with or endorsed by the Meshtastic project. The official website is [meshtastic.org](https://meshtastic.org/).
 
+## Лицензия
+
+MPL-2.0 — подробности в файле [LICENSE](https://github.com/black-roland/emtt?tab=readme-ov-file#MPL-2.0-1-ov-file).
+
 [releases-shield]: https://img.shields.io/badge/1.2.2-версия-blue?logo=github&style=flat-square&cacheSeconds=86400
-[releases]: https://github.com/black-roland/emtt/blob/main/LICENSE
+[releases]: https://github.com/black-roland/emtt/blob/master/CHANGELOG.md
 [telegram-shield]: https://img.shields.io/badge/Telegram-чат-blue?style=flat-square&logo=telegram
 [telegram]: https://t.me/+BBhPhVEURE1iZTZi
 [boosty-shield]: https://img.shields.io/badge/Boosty-готовые_сборки-orange?style=flat-square&logo=boosty
