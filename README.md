@@ -1,3 +1,7 @@
+See [description in English](#easy-meshtastic-to-telegram-english) below 👇
+<br>
+<br>
+
 # Easy Meshtastic to Telegram
 
 [![Версия][releases-shield]][releases]
@@ -19,7 +23,7 @@ flowchart TB
         N[Носимая нода] --> G["Нода дома<br><small>(шлюз)</small>"]
     end
 
-    G -->|syslog| B["Сервер с EMtT<br><small>(NAS, VPS, ПК или одноплатник)</small>"]
+    G -->|syslog| B["Сервер с EMtT<br><small>(NAS/VPS/ПК/RPi)</small>"]
     B -->|Telegram Bot API| C[Telegram]
 ```
 
@@ -141,6 +145,55 @@ EMtT is not affiliated with or endorsed by the Meshtastic project. The official 
 ## Лицензия
 
 MPL-2.0 — подробности в файле [LICENSE](https://github.com/black-roland/emtt?tab=readme-ov-file#MPL-2.0-1-ov-file).
+
+---
+
+# Easy Meshtastic to Telegram (English)
+
+[![Version][releases-shield]][releases]
+
+**EMtT** is a simple bridge that forwards messages from the Meshtastic radio network to Telegram. No MQTT, no unnecessary complexity.
+
+The project is based on the code of the [St. Petersburg public bridge](https://mansmarthome.info/posts/radio/kak-ia-sviazyval-meshtastic-i-telegram-istoriia-pietierburghskogho-mosta/?utm_source=github&utm_medium=referral&utm_campaign=emtt) (RU), which has been running since 2023. For a detailed overview, use cases, and a demo, [check out the blog post](https://mansmarthome.info/posts/radio/emtt-most-meshtastic-v-telegram-uviedomlieniia-biez-intiernieta/?utm_source=github&utm_medium=referral&utm_campaign=emtt) (RU).
+
+## How it works
+
+EMtT is essentially a syslog server. Your Meshtastic node sends logs via Wi-Fi, EMtT parses them and forwards messages to Telegram.
+
+```mermaid
+flowchart TB
+    subgraph A [Meshtastic Network]
+        N[Portable node] --> G["Home node<br><small>(gateway)</small>"]
+    end
+
+    G -->|syslog| B["EMtT Server<br><small>(NAS/VPS/PC/RPi)</small>"]
+    B -->|Telegram Bot API| C[Telegram]
+```
+
+## Quick start
+
+```bash
+emtt syslog --bot-token=<your_bot_token> --chat-id=<chat_id>
+```
+
+For a complete list of options, use `emtt syslog --help` — the app itself supports English.
+
+## Support
+
+- **Issues & feature requests:** [GitHub Issues](https://github.com/black-roland/emtt/issues)
+- **Pull requests:** See [`CONTRIBUTING.md`](https://github.com/black-roland/emtt/blob/master/CONTRIBUTING.md)
+- **Pre-built binaries:** [Boosty](https://boosty.to/mansmarthome/posts/ca2ddb88-d808-419b-8faf-5d5619f66b95) (RU)
+- **Discussions:** [Telegram chat](https://t.me/+BBhPhVEURE1iZTZi)
+
+## Trademarks
+
+Meshtastic® is a registered trademark of Meshtastic LLC. Meshtastic software components are released under various licenses, see [GitHub](https://github.com/meshtastic) for details. No warranty is provided — use at your own risk.
+
+EMtT is not affiliated with or endorsed by the Meshtastic project. The official Meshtastic website is [meshtastic.org](https://meshtastic.org/).
+
+## License
+
+MPL-2.0 — see [LICENSE](https://github.com/black-roland/emtt?tab=readme-ov-file#MPL-2.0-1-ov-file).
 
 [releases-shield]: https://img.shields.io/badge/1.2.2-версия-blue?logo=github&style=flat-square&cacheSeconds=86400
 [releases]: https://github.com/black-roland/emtt/blob/master/CHANGELOG.md
