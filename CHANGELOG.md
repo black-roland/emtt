@@ -5,11 +5,11 @@
 Формат основан на [«Keep a Changelog»](https://keepachangelog.com/ru/1.1.0/),
 и этот проект придерживается [семантического версионирования](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.2.3] - 2026-04-22
 
 ### Исправлено
 
-- Текстовые сообщения, состоящие из нескольких строк больше не обрезаются ([#7](https://github.com/black-roland/emtt/issues/7)).
+- Многострочные сообщения больше не обрезаются ([#7](https://github.com/black-roland/emtt/issues/7)).
 
 ## [1.2.2] - 2026-03-29
 

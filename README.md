@@ -195,7 +195,7 @@ EMtT is not affiliated with or endorsed by the Meshtastic project. The official 
 
 MPL-2.0 — see [LICENSE](https://github.com/black-roland/emtt?tab=readme-ov-file#MPL-2.0-1-ov-file).
 
-[releases-shield]: https://img.shields.io/badge/1.2.2-версия-blue?logo=github&style=flat-square&cacheSeconds=86400
+[releases-shield]: https://img.shields.io/badge/1.2.3-версия-blue?logo=github&style=flat-square&cacheSeconds=86400
 [releases]: https://github.com/black-roland/emtt/blob/master/CHANGELOG.md
 [blog-shield]: https://img.shields.io/badge/Демо-cc3336?style=flat-square&logo=readthedocs
 [blog]: https://mansmarthome.info/posts/radio/emtt-most-meshtastic-v-telegram-uviedomlieniia-biez-intiernieta/?utm_source=github&utm_medium=referral&utm_campaign=emtt

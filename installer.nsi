@@ -9,7 +9,7 @@ Unicode True
 
 !define APPNAME "EMtT"
 !ifndef VERSION
-  !define VERSION "1.2.2"
+  !define VERSION "1.2.3"
 !endif
 !ifndef DIST_DIR
   !define DIST_DIR "dist"
