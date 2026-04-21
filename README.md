@@ -27,10 +27,10 @@ flowchart TB
 ### Для подписчиков Boosty (готовые сборки)
 
 Если вы не хотите разбираться с компиляцией и предпочитаете готовое решение, [поддержите проект на Boosty](https://boosty.to/mansmarthome/posts/ca2ddb88-d808-419b-8faf-5d5619f66b95). В благодарность за подписку вы получите доступ к:
-* **Готовым Docker-образам** для архитектур `amd64` (серверы, ПК) и `aarch64` (Raspberry Pi, NAS).
-* **Установщику для Windows** (с GUI) для простой установки и настройки.
-* **Скомпилированным бинарникам** для Linux (`amd64`, `aarch64`).
-* **Подробной документации** по настройке и использованию.
+- **Готовым Docker-образам** для архитектур `amd64` (серверы, ПК) и `aarch64` (Raspberry Pi, NAS).
+- **Установщику для Windows** (с GUI) для простой установки и настройки.
+- **Скомпилированным бинарникам** для Linux (`amd64`, `aarch64`).
+- **Подробной документации** по настройке и использованию.
 
 ### Open Source (сборка из исходников)
 
@@ -52,7 +52,7 @@ flowchart TB
    sudo cp target/release/emtt /usr/local/bin/
    ```
 
-Через Docker:
+**Через Docker:**
 
 ```bash
 git clone https://github.com/black-roland/emtt.git
@@ -62,8 +62,6 @@ docker build -t emtt .
 
 ## Быстрый старт
 
-После установки EMtT его нужно просто запустить, передав токен вашего Telegram-бота и ID чата, куда отправлять сообщения.
-
 1. **Создайте Telegram-бота** через [@BotFather](https://t.me/BotFather) и получите его токен.
 2. **Узнайте ID чата** (это может быть ID пользователя или группы). Можно использовать бота [@myidbot](https://t.me/myidbot).
 3. Запустите EMtT:
@@ -71,18 +69,60 @@ docker build -t emtt .
    emtt syslog --chat-id=<ID_чата_или_пользователя> --bot-token=<токен_бота_в_Telegram>
    ```
 
-   Демон запустится и начнет слушать UDP-порт `50514` на всех сетевых интерфейсах.
+   EMtT запустится и начнет слушать UDP-порт `50514` на всех сетевых интерфейсах.
 
 ### Настройка Meshtastic-ноды (шлюза)
 
-Теперь нужно настроить вашу Meshtastic-ноду, которая будет выступать в роли шлюза.
-
 1. Подключитесь к ноде через приложение Meshtastic (iOS/Android) или через CLI.
-2. Перейдите в настройки Wi-Fi и подключите ноду к вашей домашней сети (той же, где работает сервер с EMtT).
+2. Перейдите в настройки Wi-Fi и подключите ноду к вашей домашней сети.
 3. В настройках сети найдите поле **«Rsyslog server»** (или «Сервер syslog»).
-4. Введите IP-адрес вашего сервера, на котором запущен EMtT, и порт `50514` в формате: `<IP-адрес>:50514`. Например, `192.168.1.100:50514`.
+4. Введите IP-адрес вашего сервера, на котором запущен EMtT, и порт `50514` в формате: `<IP-адрес>:50514`.
 
 Готово! Теперь все личные сообщения, которые получит ваша нода-шлюз, будут дублироваться в Telegram-чат.
+
+## Конфигурация
+
+EMtT настраивается через аргументы командной строки или переменные окружения. Полный список параметров доступен в справке: `emtt syslog --help`.
+
+### Примеры
+
+**Настройка через аргументы командной строки:**
+```bash
+emtt syslog --bot-token=7726737401:... --chat-id=-1001234567890 --log-level=info
+```
+
+**Через переменные окружения:**
+```bash
+export TELEGRAM_BOT_TOKEN="7726737401:..."
+export TELEGRAM_CHAT_ID="-1001234567890"
+export LOG_LEVEL="info"
+emtt syslog
+```
+
+**Docker:**
+```bash
+docker run -e TELEGRAM_BOT_TOKEN="7726737401:..." \
+           -e TELEGRAM_CHAT_ID="-1001234567890" \
+           -p 50514:50514/udp \
+           emtt
+```
+
+**Отправка в вебхук вместо Telegram:**
+```bash
+emtt syslog --webhook-url=https://webhook.site/832f928d-dfc5-4d4b-875f-3983361d0480
+```
+
+**Использование SOCKS5-прокси:**
+```bash
+emtt syslog --bot-token=7726737401:... --chat-id=-1001234567890 \
+            --proxy-url=socks5://localhost:9050
+```
+
+**Self-hosted Telegram Bot API:**
+```bash
+emtt syslog --bot-token=7726737401:... --chat-id=-1001234567890 \
+            --api-server=http://127.0.0.1:8081
+```
 
 ## Поддержка и обратная связь
 
@@ -94,7 +134,7 @@ docker build -t emtt .
 
 Meshtastic® is a registered trademark of Meshtastic LLC. Meshtastic software components are released under various licenses, see [GitHub](https://github.com/meshtastic) for details. No warranty is provided — use at your own risk.
 
-This site is not affiliated with or endorsed by the Meshtastic project. The official website is [meshtastic.org](https://meshtastic.org/).
+EMtT is not affiliated with or endorsed by the Meshtastic project. The official Meshtastic website is [meshtastic.org](https://meshtastic.org/).
 
 ## Лицензия
 
