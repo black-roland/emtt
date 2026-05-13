@@ -1,8 +1,8 @@
 # Application metadata
-app-name = Easy Meshtastic to Telegram
-app-description = Bridge between Meshtastic and Telegram
+app-name = Easy Mesh to Telegram
+app-description = Easy to set up bridge from Meshtastic to Telegram
 app-long-description =
-  Easy Meshtastic to Telegram
+  Easy Mesh to Telegram
 
   Forwards messages from Meshtastic network to Telegram chats.
 

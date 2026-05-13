@@ -1,15 +1,15 @@
-See [description in English](#easy-meshtastic-to-telegram-english) below 👇
+See [description in English](#easy-mesh-to-telegram-english) below 👇
 <br>
 <br>
 
-# Easy Meshtastic to Telegram
+# Easy Mesh to Telegram
 
 [![Версия][releases-shield]][releases]
 [![Подробности][blog-shield]][blog]
 [![Boosty][boosty-shield]][boosty]
 [![Telegram][telegram-shield]][telegram]
 
-**EMtT** — это простой мост, который пересылает сообщения из радиосети Meshtastic прямо в Telegram. Никакого MQTT, никаких лишних сложностей.
+**EMtT** — это простой мост, который пересылает сообщения из радиосети Meshtastic® прямо в Telegram. Никакого MQTT, никаких лишних сложностей.
 
 Проект основан на коде [петербургского моста](https://mansmarthome.info/posts/radio/kak-ia-sviazyval-meshtastic-i-telegram-istoriia-pietierburghskogho-mosta/?utm_source=github&utm_medium=referral&utm_campaign=emtt), который работает с 2023 года. Подробный рассказ о возможностях, сценариях использования и демонстрация работы EMtT [доступны в блоге](https://mansmarthome.info/posts/radio/emtt-most-meshtastic-v-telegram-uviedomlieniia-biez-intiernieta/?utm_source=github&utm_medium=referral&utm_campaign=emtt).
 
@@ -148,11 +148,11 @@ MPL-2.0 — подробности в файле [LICENSE](https://github.com/bl
 
 ---
 
-# Easy Meshtastic to Telegram (English)
+# Easy Mesh to Telegram (English)
 
 [![Version][releases-shield]][releases]
 
-**EMtT** is a simple bridge that forwards messages from the Meshtastic radio network to Telegram. No MQTT, no unnecessary complexity.
+**EMtT** is a simple bridge that forwards messages from the Meshtastic® radio network to Telegram. No MQTT, no unnecessary complexity.
 
 The project is based on the code of the [St. Petersburg public bridge](https://mansmarthome.info/posts/radio/kak-ia-sviazyval-meshtastic-i-telegram-istoriia-pietierburghskogho-mosta/?utm_source=github&utm_medium=referral&utm_campaign=emtt) (RU), which has been running since 2023. For a detailed overview, use cases, and a demo, [check out the blog post](https://mansmarthome.info/posts/radio/emtt-most-meshtastic-v-telegram-uviedomlieniia-biez-intiernieta/?utm_source=github&utm_medium=referral&utm_campaign=emtt) (RU).
 

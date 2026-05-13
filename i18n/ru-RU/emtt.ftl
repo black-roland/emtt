@@ -1,8 +1,8 @@
 # Метаданные приложения
-app-name = Easy Meshtastic to Telegram
-app-description = Мост между Meshtastic и Telegram
+app-name = Easy Mesh to Telegram
+app-description = Мост из Meshtastic в Telegram, который легко настроить
 app-long-description =
-  Easy Meshtastic to Telegram
+  Easy Mesh to Telegram
 
   Пересылает сообщения из сети Meshtastic в Telegram-чаты.
 

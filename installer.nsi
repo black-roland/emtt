@@ -21,10 +21,10 @@ InstallDir "$LOCALAPPDATA\Programs\EMtT"
 RequestExecutionLevel user
 
 VIProductVersion "${VERSION}.0"
-VIAddVersionKey "ProductName" "Easy Meshtastic to Telegram"
+VIAddVersionKey "ProductName" "Easy Mesh to Telegram"
 VIAddVersionKey "FileVersion" "${VERSION}"
 VIAddVersionKey "ProductVersion" "${VERSION}"
-VIAddVersionKey "FileDescription" "Установщик Easy Meshtastic to Telegram"
+VIAddVersionKey "FileDescription" "Установщик Easy Mesh to Telegram"
 VIAddVersionKey "LegalCopyright" "MPL-2.0"
 
 Var Dialog
@@ -48,7 +48,7 @@ Var params
 !define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
 !define MUI_FINISHPAGE_RUN
 !define MUI_FINISHPAGE_RUN_FUNCTION "LaunchLink"
-!define MUI_FINISHPAGE_RUN_TEXT "Запустить Easy Meshtastic to Telegram"
+!define MUI_FINISHPAGE_RUN_TEXT "Запустить Easy Mesh to Telegram"
 
 ; Страницы установщика
 !insertmacro MUI_PAGE_WELCOME
@@ -69,7 +69,7 @@ Page custom ConfigPage ConfigPageLeave
 
 !insertmacro MUI_LANGUAGE "Russian"
 
-!define MUI_WELCOMEPAGE_TITLE "Добро пожаловать в установщик Easy Meshtastic to Telegram"
+!define MUI_WELCOMEPAGE_TITLE "Добро пожаловать в установщик Easy Mesh to Telegram"
 !define MUI_WELCOMEPAGE_TEXT "Этот установщик разместит EMtT в папке пользователя.\n\nПрава администратора не потребуются.\n\nНажмите «Далее» для продолжения."
 
 Section "Main"
@@ -83,7 +83,7 @@ Section "Main"
   ; Ярлыки только для текущего пользователя
   SetShellVarContext current
   CreateDirectory "$SMPROGRAMS\EMtT"
-  CreateShortcut "$SMPROGRAMS\EMtT\Easy Meshtastic to Telegram.lnk" "$INSTDIR\emtt.exe" "$params" "" 0 SW_SHOWNORMAL "" "Easy Meshtastic to Telegram"
+  CreateShortcut "$SMPROGRAMS\EMtT\Easy Mesh to Telegram.lnk" "$INSTDIR\emtt.exe" "$params" "" 0 SW_SHOWNORMAL "" "Easy Mesh to Telegram"
 
   ; Запись об удалении — только для текущего пользователя (HKCU)
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\EMtT" "DisplayName" "${APPNAME}"
@@ -100,7 +100,7 @@ Section "Uninstall"
   RMDir "$INSTDIR"
 
   SetShellVarContext current
-  Delete "$SMPROGRAMS\EMtT\Easy Meshtastic to Telegram.lnk"
+  Delete "$SMPROGRAMS\EMtT\Easy Mesh to Telegram.lnk"
   RMDir "$SMPROGRAMS\EMtT"
 
   DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\EMtT"
@@ -108,7 +108,7 @@ SectionEnd
 
 ; Страница конфигурации (компактная версия)
 Function ConfigPage
-  !insertmacro MUI_HEADER_TEXT "Настройка Easy Meshtastic to Telegram" "Укажите параметры для ярлыка в меню «Пуск»"
+  !insertmacro MUI_HEADER_TEXT "Настройка Easy Mesh to Telegram" "Укажите параметры для ярлыка в меню «Пуск»"
 
   nsDialogs::Create 1018
   Pop $Dialog
@@ -185,5 +185,5 @@ FunctionEnd
 
 Function LaunchLink
   ; Запускаем через специальный ярлык — все параметры ($params) уже внутри него
-  ExecShell "" "$SMPROGRAMS\EMtT\Easy Meshtastic to Telegram.lnk"
+  ExecShell "" "$SMPROGRAMS\EMtT\Easy Mesh to Telegram.lnk"
 FunctionEnd
