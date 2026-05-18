@@ -247,9 +247,7 @@ where
         let from_hex = format!("0x{:08x}", from);
         let formatted_id = format!("0x{:08x}", id);
 
-        // Escape newlines so the log entry stays on a single line
-        let text_for_log = text.replace('\n', "\\n").replace('\r', "\\r");
-        info!("{}", fl!("received-text-msg", from = from_hex.as_str(), id = formatted_id.as_str(), text = text_for_log.as_str()));
+        info!("{}", fl!("received-text-msg", from = from_hex.as_str(), id = formatted_id.as_str(), text = text.as_str()));
 
         if RANGE_TEST_RE.is_match(&text) {
             debug!("{}", fl!("ignoring-range-test", from = from_hex, id = format!("0x{:08x}", id)));
@@ -363,7 +361,7 @@ where
             }
             for id in to_remove {
                 handles.remove(&id);
-                debug!("Cleaned up stale handle info for id: 0x{:08x}", id);
+                trace!("{}", fl!("cleaned-stale-handle-info", id = format!("0x{:08x}", id)));
             }
         }
     });

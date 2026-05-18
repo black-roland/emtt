@@ -72,22 +72,26 @@ stale-handle-info = Stale sender information for message ID: { $id }
 skipping-mqtt = Skipping MQTT-forwarded text for message ID: { $id }
 stored-handle-info = Stored handle info for text msg ID: { $id }, via: { $via }, ch: { $ch }, to: { $to }, is_mqtt: { $is_mqtt }
 ignoring-text-msg = Ignoring text message ID: { $id }, channel: { $ch }, to: { $to }
-forwarded-to-telegram = Message forwarded to Telegram (from { $from }): { $message }
+forwarded-to-telegram = Message forwarded to Telegram (from { $from }):
+  { $message }
 failed-to-render = Failed to render template: { $error }
 failed-to-send = Failed to send message to Telegram: { $error }
 failed-to-send-webhook = Failed to send message to webhook: { $error }
 message-content = Message content: { $content }
 processed-nodeinfo = Processed node info: { $longname } ({ $shortname }) - { $id }
 syslog-binding = Syslog server listening on { $addr }
-received-text-msg = Received text message from { $from } (ID: { $id }): { $text }
+received-text-msg = Received text message from { $from } (ID: { $id }):
+  { $text }
 recv-error = Receive error: { $error }
 invalid-utf8 = Invalid UTF-8 data from { $peer }
 failed-to-parse-syslog = Failed to parse syslog message: { $error }, raw data: { $raw }
 unhandled-syslog = Unhandled syslog message: { $message }
 webhook-enabled = Webhook forwarding enabled to: { $url }
 webhook-disabled = Webhook forwarding disabled
-forwarded-to-webhook = Message forwarded to webhook (from { $from }): { $message }
+forwarded-to-webhook = Message forwarded to webhook (from { $from }):
+  { $message }
 no-output-configured = At least one output (Telegram or webhook) must be configured
 proxy-enabled = Proxy enabled: { $url }
 bot-api-server-official = Using official Telegram Bot API (api.telegram.org)
 bot-api-server-custom   = Using custom Telegram Bot API server: { $url }
+cleaned-stale-handle-info = Cleaned up stale handle info for id: { $id }
