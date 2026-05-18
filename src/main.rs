@@ -61,8 +61,12 @@ enum Commands {
         #[arg(help = fl!("arg-bot-token"))]
         bot_token: Option<String>,
 
-        #[arg(long, env = "TELEGRAM_CHAT_ID")]
-        #[arg(help = fl!("arg-chat-id"))]
+        #[arg(
+            long,
+            env = "TELEGRAM_CHAT_ID",
+            help = fl!("arg-chat-id"),
+            allow_hyphen_values = true
+        )]
         chat_id: Option<i64>,
 
         #[arg(long, env = "WEBHOOK_URL")]
