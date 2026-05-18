@@ -95,3 +95,4 @@ proxy-enabled = Прокси включён: { $url }
 bot-api-server-official = Используется официальный Telegram Bot API (api.telegram.org)
 bot-api-server-custom   = Используется собственный сервер Telegram Bot API: { $url }
 cleaned-stale-handle-info = Очищены устаревшие метаданные для id: { $id }
+press-enter-close = Нажмите Enter, чтобы закрыть окно...

@@ -278,6 +278,27 @@ fn print_sponsorship_message() {
     println!();
 }
 
+#[cfg(windows)]
+fn shutdown(exit_code: i32) -> ! {
+    use std::io::{self, Write};
+
+    // Only interact if the user can see the console.
+    if atty::is(atty::Stream::Stdin) && atty::is(atty::Stream::Stdout) {
+        log::logger().flush();
+        print!("\n{}", fl!("press-enter-close"));
+        let _ = io::stdout().flush();
+        let mut input = String::new();
+        let _ = io::stdin().read_line(&mut input);
+    }
+
+    std::process::exit(exit_code);
+}
+
+#[cfg(not(windows))]
+fn shutdown(exit_code: i32) -> ! {
+    std::process::exit(exit_code);
+}
+
 #[tokio::main]
 async fn main() {
     // Initialize i18n first
@@ -285,13 +306,11 @@ async fn main() {
     lang::init_localizer();
 
     // Parse CLI FIRST so we can use --log-level (CLI > LOG_LEVEL env > default debug)
-    let cli = match Cli::try_parse() {
-        Ok(cli) => cli,
-        Err(e) => {
-            let e = e.apply::<ClapI18nRichFormatter>();
-            e.exit();
-        }
-    };
+    let cli = Cli::try_parse().unwrap_or_else(|e| {
+        let e = e.apply::<ClapI18nRichFormatter>();
+        let _ = e.print();
+        shutdown(e.exit_code());
+    });
 
     // Map LogLevel to LevelFilter
     let level_filter = match cli.log_level {
@@ -346,7 +365,7 @@ async fn main() {
 
             if !use_telegram && !use_webhook {
                 log::error!("{}", fl!("no-output-configured"));
-                return;
+                shutdown(2);
             }
 
             log::info!("{}", fl!("starting-syslog-mode"));
@@ -387,7 +406,7 @@ async fn main() {
                     }
                     Err(e) => {
                         log::error!("Invalid proxy URL '{}': {}", proxy_url, e);
-                        return;
+                        shutdown(2);
                     }
                 }
             }
@@ -398,7 +417,7 @@ async fn main() {
                 Ok(c) => c,
                 Err(e) => {
                     log::error!("Failed to build HTTP client: {}", e);
-                    return;
+                    shutdown(1);
                 }
             };
 
@@ -411,7 +430,7 @@ async fn main() {
                         Ok(url) => bot_base.set_api_url(url),
                         Err(e) => {
                             log::error!("Invalid Telegram Bot API server URL '{}': {}", server_url, e);
-                            return;
+                            shutdown(2);
                         }
                     }
                 } else {
