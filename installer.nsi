@@ -176,7 +176,7 @@ Function ConfigPageLeave
     StrCpy $params '$params --channel "$channel"'
   ${EndIf}
   ${If} $proxyurl != ""
-    StrCpy $params '$params --proxy "$proxyurl"'
+    StrCpy $params '$params --proxy-url "$proxyurl"'
   ${EndIf}
   ${If} $apiserver != ""
     StrCpy $params '$params --api-server "$apiserver"'
