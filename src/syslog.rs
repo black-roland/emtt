@@ -2,21 +2,21 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use anyhow::{Result, Context};
+use log::{debug, info, trace, warn};
+use regex::Regex;
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use log::{debug, info, trace, warn};
-use regex::Regex;
 use tokio::net::UdpSocket;
 use tokio::sync::Mutex;
+use tokio_graceful_shutdown::{SubsystemHandle, SubsystemBuilder};
+
 use crate::Config;
-use super::MessageData;
-
-// Import the fl! macro from the crate root (which re-exports it from lang)
+use crate::MessageData;
 use crate::fl;
-
 use crate::lang;
 
 use once_cell::sync::Lazy;
@@ -327,7 +327,41 @@ where
     false
 }
 
-pub async fn run_server<F>(config: &Config, sender: F)
+async fn cleanup_subsystem(
+    subsys: SubsystemHandle,
+    handle_infos: Arc<Mutex<HashMap<u32, HandleInfo>>>,
+) -> Result<()> {
+    loop {
+        tokio::select! {
+            _ = tokio::time::sleep(tokio::time::Duration::from_secs(60)) => {
+                let current_time = now();
+                let mut handles = handle_infos.lock().await;
+                let mut to_remove: Vec<u32> = Vec::new();
+                for (id, handle) in handles.iter_mut() {
+                    handle.vias.retain(|_, via| current_time - via.timestamp <= 180);
+                    if handle.vias.is_empty() {
+                        to_remove.push(*id);
+                    }
+                }
+                for id in to_remove {
+                    handles.remove(&id);
+                    trace!("{}", fl!("cleaned-stale-handle-info", id = format!("0x{:08x}", id)));
+                }
+            }
+            _ = subsys.on_shutdown_requested() => {
+                debug!("{}", fl!("cleanup-shutdown"));
+                break;
+            }
+        }
+    }
+    Ok(())
+}
+
+pub async fn run_server<F>(
+    subsys: SubsystemHandle,
+    config: Config,
+    sender: F,
+) -> Result<()>
 where
     F: Fn(MessageData) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync + 'static,
 {
@@ -335,85 +369,74 @@ where
     let handle_infos: Arc<Mutex<HashMap<u32, HandleInfo>>> = Arc::new(Mutex::new(HashMap::new()));
 
     let addr = format!("{}:{}", config.syslog_host, config.syslog_port);
-    let socket = match UdpSocket::bind(&addr).await {
-        Ok(s) => s,
-        Err(e) => {
-            log::error!("Failed to bind UDP socket on {}: {}", addr, e);
-            return;
-        }
-    };
+    let socket = UdpSocket::bind(&addr)
+        .await
+        .with_context(|| format!("Failed to bind UDP socket on {}", addr))?;
 
     info!("{}", fl!("syslog-binding", addr = addr));
 
-    // Spawn periodic cleanup task
     let handle_infos_clone = handle_infos.clone();
-    tokio::spawn(async move {
-        loop {
-            tokio::time::sleep(tokio::time::Duration::from_secs(60)).await; // Every 1 minute
-            let current_time = now();
-            let mut handles = handle_infos_clone.lock().await;
-            let mut to_remove: Vec<u32> = Vec::new();
-            for (id, handle) in handles.iter_mut() {
-                handle.vias.retain(|_, via| current_time - via.timestamp <= 180);
-                if handle.vias.is_empty() {
-                    to_remove.push(*id);
-                }
-            }
-            for id in to_remove {
-                handles.remove(&id);
-                trace!("{}", fl!("cleaned-stale-handle-info", id = format!("0x{:08x}", id)));
-            }
-        }
-    });
+    subsys.start(SubsystemBuilder::new(
+        "cleanup-task",
+        move |s| cleanup_subsystem(s, handle_infos_clone),
+    ));
 
     let mut buf = [0; 1024];
     loop {
-        let (len, peer) = match socket.recv_from(&mut buf).await {
-            Ok((l, p)) => (l, p),
-            Err(e) => {
-                warn!("{}", fl!("recv-error", error = e.to_string()));
-                continue;
+        tokio::select! {
+            res = socket.recv_from(&mut buf) => {
+                match res {
+                    Ok((len, peer)) => {
+                        let msg = match String::from_utf8(buf[..len].to_vec()) {
+                            Ok(m) => m,
+                            Err(_) => {
+                                warn!("{}", fl!("invalid-utf8", peer = peer.to_string()));
+                                continue;
+                            }
+                        };
+
+                        let (ident, message) = match parse_syslog_message(&msg) {
+                            Ok(r) => r,
+                            Err(err) => {
+                                warn!("{}", fl!("failed-to-parse-syslog", error = err, raw = msg));
+                                continue;
+                            }
+                        };
+
+                        if parse_and_store_nodeinfo(&message, &known_nodes).await {
+                            continue;
+                        }
+
+                        if parse_and_store_handle_received(&message, &ident, &handle_infos).await {
+                            continue;
+                        }
+
+                        if parse_and_process_text_message(
+                            &message,
+                            &ident,
+                            &config,
+                            &sender,
+                            &handle_infos,
+                            &known_nodes,
+                        )
+                        .await
+                        {
+                            continue;
+                        }
+
+                        trace!("{}", fl!("unhandled-syslog", message = message));
+                    }
+                    Err(e) => {
+                        warn!("{}", fl!("recv-error", error = e.to_string()));
+                    }
+                }
             }
-        };
-
-        let msg = match String::from_utf8(buf[..len].to_vec()) {
-            Ok(m) => m,
-            Err(_) => {
-                warn!("{}", fl!("invalid-utf8", peer = peer.to_string()));
-                continue;
+            _ = subsys.on_shutdown_requested() => {
+                debug!("{}", fl!("shutdown-signal-received"));
+                break;
             }
-        };
-
-        let (ident, message) = match parse_syslog_message(&msg) {
-            Ok(r) => r,
-            Err(err) => {
-                warn!("{}", fl!("failed-to-parse-syslog", error = err, raw = msg));
-                continue;
-            }
-        };
-
-        if parse_and_store_nodeinfo(&message, &known_nodes).await {
-            continue;
         }
-
-        if parse_and_store_handle_received(&message, &ident, &handle_infos).await {
-            continue;
-        }
-
-        if parse_and_process_text_message(
-            &message,
-            &ident,
-            config,
-            &sender,
-            &handle_infos,
-            &known_nodes,
-        )
-        .await
-        {
-            continue;
-        }
-
-        // If none matched, log verbose
-        trace!("{}", fl!("unhandled-syslog", message = message));
     }
+
+    Ok(())
 }

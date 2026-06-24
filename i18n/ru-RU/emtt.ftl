@@ -92,7 +92,13 @@ forwarded-to-webhook = Сообщение отправлено в вебхук (
   { $message }
 no-output-configured = Настройте пересылку в Telegram или вебхук
 proxy-enabled = Прокси включён: { $url }
+invalid-proxy-url = Некорректный URL прокси '{ $url }': { $error }
+http-client-build-error = Не удалось создать HTTP-клиент: { $error }
+invalid-api-server-url = Некорректный URL сервера Telegram Bot API «{ $url }»: { $error }
+app-exit-error = Приложение завершилось с ошибкой: { $error }
 bot-api-server-official = Используется официальный Telegram Bot API (api.telegram.org)
 bot-api-server-custom   = Используется собственный сервер Telegram Bot API: { $url }
 cleaned-stale-handle-info = Очищены устаревшие метаданные для id: { $id }
+cleanup-shutdown = Подсистема очистки завершает работу
+shutdown-signal-received = Получен сигнал завершения, остановка сервера syslog
 press-enter-close = Нажмите Enter, чтобы закрыть окно...

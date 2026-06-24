@@ -15,6 +15,7 @@ minijinja = "2.19"
 regex = "1.12"
 serde = { version = "1.0.228", features = ["derive"] }
 teloxide = { version = "0.17.0", features = ["macros"] }
+tokio-graceful-shutdown = "0.15"
 tokio = { version = "1.49.0", features = ["full", "net"] }
 toml = "0.9.10"
 clap-i18n-richformatter = { version = "0.3.0", features = ["derive"] }

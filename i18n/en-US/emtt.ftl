@@ -92,7 +92,13 @@ forwarded-to-webhook = Message forwarded to webhook (from { $from }):
   { $message }
 no-output-configured = At least one output (Telegram or webhook) must be configured
 proxy-enabled = Proxy enabled: { $url }
+invalid-proxy-url = Invalid proxy URL '{ $url }': { $error }
+http-client-build-error = Failed to build HTTP client: { $error }
+invalid-api-server-url = Invalid Telegram Bot API server URL '{ $url }': { $error }
+app-exit-error = Application exited with error: { $error }
 bot-api-server-official = Using official Telegram Bot API (api.telegram.org)
 bot-api-server-custom   = Using custom Telegram Bot API server: { $url }
 cleaned-stale-handle-info = Cleaned up stale handle info for id: { $id }
+cleanup-shutdown = Cleanup subsystem shutting down
+shutdown-signal-received = Shutdown signal received, stopping syslog server
 press-enter-close = Press Enter to close this window...

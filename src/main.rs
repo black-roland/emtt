@@ -14,6 +14,8 @@ use std::pin::Pin;
 use std::sync::LazyLock;
 use teloxide::types::ParseMode;
 use log::LevelFilter;
+use std::time::Duration;
+use tokio_graceful_shutdown::{Toplevel, SubsystemBuilder};
 
 mod lang;
 mod syslog;
@@ -405,7 +407,7 @@ async fn main() {
                         client_builder = client_builder.proxy(proxy);
                     }
                     Err(e) => {
-                        log::error!("Invalid proxy URL '{}': {}", proxy_url, e);
+                        log::error!("{}", fl!("invalid-proxy-url", url = proxy_url, error = e.to_string()));
                         shutdown(2);
                     }
                 }
@@ -416,7 +418,7 @@ async fn main() {
             let http_client = match client_builder.build() {
                 Ok(c) => c,
                 Err(e) => {
-                    log::error!("Failed to build HTTP client: {}", e);
+                    log::error!("{}", fl!("http-client-build-error", error = e.to_string()));
                     shutdown(1);
                 }
             };
@@ -429,7 +431,7 @@ async fn main() {
                     match reqwest::Url::parse(server_url) {
                         Ok(url) => bot_base.set_api_url(url),
                         Err(e) => {
-                            log::error!("Invalid Telegram Bot API server URL '{}': {}", server_url, e);
+                            log::error!("{}", fl!("invalid-api-server-url", url = server_url, error = e.to_string()));
                             shutdown(2);
                         }
                     }
@@ -517,7 +519,24 @@ async fn main() {
             };
 
             log::info!("{}", fl!("syslog-server"));
-            syslog::run_server(&config, sender).await;
+
+            let result = Toplevel::new(move |s| async move {
+                s.start(SubsystemBuilder::new(
+                    "syslog-server",
+                    move |subsys| syslog::run_server(subsys, config, sender),
+                ));
+            })
+            .catch_signals()
+            .handle_shutdown_requests(Duration::from_millis(2000))
+            .await;
+
+            match result {
+                Ok(()) => shutdown(0),
+                Err(err) => {
+                    log::error!("{}", fl!("app-exit-error", error = err.to_string()));
+                    shutdown(1);
+                }
+            }
         }
     }
 }
