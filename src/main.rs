@@ -3,19 +3,21 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use clap::{Parser, Subcommand, ValueEnum};
-use clap_i18n_richformatter::{clap_i18n, ClapI18nRichFormatter, init_clap_rich_formatter_localizer};
+use clap_i18n_richformatter::{
+    ClapI18nRichFormatter, clap_i18n, init_clap_rich_formatter_localizer,
+};
 use env_logger::Env;
-use minijinja::{context, value::ValueKind, Environment, Output, State, Value, AutoEscape};
-use teloxide::utils::{html, markdown};
+use log::LevelFilter;
+use minijinja::{AutoEscape, Environment, Output, State, Value, context, value::ValueKind};
 use reqwest::{ClientBuilder, Proxy};
 use serde::Serialize;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::LazyLock;
-use teloxide::types::ParseMode;
-use log::LevelFilter;
 use std::time::Duration;
-use tokio_graceful_shutdown::{Toplevel, SubsystemBuilder};
+use teloxide::types::ParseMode;
+use teloxide::utils::{html, markdown};
+use tokio_graceful_shutdown::{SubsystemBuilder, Toplevel};
 
 mod lang;
 mod syslog;
@@ -65,12 +67,13 @@ enum Commands {
         bot_token: Option<String>,
 
         #[arg(
-            long,
+            long = "chat-id",
             env = "TELEGRAM_CHAT_ID",
             help = fl!("arg-chat-id"),
-            allow_hyphen_values = true
+            allow_hyphen_values = true,
+            value_delimiter = ',',
         )]
-        chat_id: Option<i64>,
+        chat_ids: Vec<i64>,
 
         #[arg(long, env = "WEBHOOK_URL")]
         #[arg(help = fl!("arg-webhook-url"))]
@@ -91,7 +94,11 @@ enum Commands {
         #[arg(help = fl!("arg-channel"))]
         channel: Option<u32>,
 
-        #[arg(long, env = "TELEGRAM_TEMPLATE", default_value = "<b>{{ from }}</b> (via <i>{{ via }}</i>)\n<blockquote>{{ text }}</blockquote>")]
+        #[arg(
+            long,
+            env = "TELEGRAM_TEMPLATE",
+            default_value = "<b>{{ from }}</b> (via <i>{{ via }}</i>)\n<blockquote>{{ text }}</blockquote>"
+        )]
         #[arg(help = fl!("arg-template"))]
         template: String,
 
@@ -171,7 +178,7 @@ enum ParseModeOpt {
 #[derive(Clone)]
 struct Config {
     bot_token: Option<String>,
-    chat_id: Option<i64>,
+    chat_ids: Vec<i64>,
     webhook_url: Option<String>,
     dm: bool,
     channel: Option<u32>,
@@ -222,7 +229,11 @@ fn unescape_template(s: String) -> String {
     result
 }
 
-fn telegram_escape_formatter(out: &mut Output, state: &State, value: &Value) -> Result<(), minijinja::Error> {
+fn telegram_escape_formatter(
+    out: &mut Output,
+    state: &State,
+    value: &Value,
+) -> Result<(), minijinja::Error> {
     if value.kind() == ValueKind::String {
         let s = value.as_str().unwrap();
         match state.auto_escape() {
@@ -336,7 +347,7 @@ async fn main() {
     match cli.command {
         Commands::Syslog {
             bot_token,
-            chat_id,
+            chat_ids,
             webhook_url,
             dm,
             channel,
@@ -350,7 +361,7 @@ async fn main() {
             let template = unescape_template(template);
             let config = Config {
                 bot_token,
-                chat_id,
+                chat_ids,
                 webhook_url,
                 dm,
                 channel,
@@ -362,7 +373,7 @@ async fn main() {
                 api_server,
             };
 
-            let use_telegram = config.bot_token.is_some() && config.chat_id.is_some();
+            let use_telegram = config.bot_token.is_some() && !config.chat_ids.is_empty();
             let use_webhook = config.webhook_url.is_some();
 
             if !use_telegram && !use_webhook {
@@ -373,8 +384,20 @@ async fn main() {
             log::info!("{}", fl!("starting-syslog-mode"));
 
             if use_telegram {
-                log::info!("{}", fl!("telegram-chat-id", chat_id = config.chat_id.unwrap()));
-                log::info!("{}", fl!("parse-mode", parse_mode = format!("{:?}", config.parse_mode)));
+                let ids = config
+                    .chat_ids
+                    .iter()
+                    .map(|id| id.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                log::info!("{}", fl!("telegram-chat-id", chat_id = ids));
+                log::info!(
+                    "{}",
+                    fl!(
+                        "parse-mode",
+                        parse_mode = format!("{:?}", config.parse_mode)
+                    )
+                );
 
                 if let Some(ref server) = config.api_server {
                     log::info!("{}", fl!("bot-api-server-custom", url = server));
@@ -392,7 +415,13 @@ async fn main() {
             }
 
             if use_webhook {
-                log::info!("{}", fl!("webhook-enabled", url = config.webhook_url.as_ref().unwrap()));
+                log::info!(
+                    "{}",
+                    fl!(
+                        "webhook-enabled",
+                        url = config.webhook_url.as_ref().unwrap()
+                    )
+                );
             } else {
                 log::info!("{}", fl!("webhook-disabled"));
             }
@@ -407,7 +436,10 @@ async fn main() {
                         client_builder = client_builder.proxy(proxy);
                     }
                     Err(e) => {
-                        log::error!("{}", fl!("invalid-proxy-url", url = proxy_url, error = e.to_string()));
+                        log::error!(
+                            "{}",
+                            fl!("invalid-proxy-url", url = proxy_url, error = e.to_string())
+                        );
                         shutdown(2);
                     }
                 }
@@ -431,7 +463,14 @@ async fn main() {
                     match reqwest::Url::parse(server_url) {
                         Ok(url) => bot_base.set_api_url(url),
                         Err(e) => {
-                            log::error!("{}", fl!("invalid-api-server-url", url = server_url, error = e.to_string()));
+                            log::error!(
+                                "{}",
+                                fl!(
+                                    "invalid-api-server-url",
+                                    url = server_url,
+                                    error = e.to_string()
+                                )
+                            );
                             shutdown(2);
                         }
                     }
@@ -446,7 +485,7 @@ async fn main() {
 
             let sender = {
                 let bot = bot.clone();
-                let chat_id = config.chat_id;
+                let chat_ids = config.chat_ids.clone();
                 let template = config.template.clone();
                 let parse_mode_opt = config.parse_mode;
                 let webhook_url = config.webhook_url.clone();
@@ -456,7 +495,7 @@ async fn main() {
 
                 move |data: MessageData| {
                     let bot = bot.clone();
-                    let chat_id = chat_id;
+                    let chat_ids = chat_ids.clone();
                     let template = template.clone();
                     let parse_mode_opt = parse_mode_opt;
                     let webhook_url = webhook_url.clone();
@@ -484,26 +523,32 @@ async fn main() {
                                     ParseModeOpt::Markdown => Some(ParseMode::MarkdownV2),
                                 };
 
-                                match telegram::send_message(
-                                    bot.as_ref().unwrap(),
-                                    chat_id.unwrap(),
-                                    &rendered,
-                                    parse_mode,
-                                )
-                                .await
-                                {
-                                    Err(err) => {
-                                        log::warn!(
-                                            "{}\n{}",
-                                            fl!("failed-to-send", error = err.to_string()),
-                                            fl!("message-content", content = rendered)
-                                        );
-                                    }
-                                    Ok(_) => {
-                                        log::debug!(
-                                            "{}",
-                                            fl!("forwarded-to-telegram", from = data.from.clone(), message = rendered)
-                                        );
+                                for chat_id in &chat_ids {
+                                    match telegram::send_message(
+                                        bot.as_ref().unwrap(),
+                                        *chat_id,
+                                        &rendered,
+                                        parse_mode,
+                                    )
+                                    .await
+                                    {
+                                        Err(err) => {
+                                            log::warn!(
+                                                "{}\n{}",
+                                                fl!("failed-to-send", error = err.to_string()),
+                                                fl!("message-content", content = rendered.clone())
+                                            );
+                                        }
+                                        Ok(_) => {
+                                            log::debug!(
+                                                "{}",
+                                                fl!(
+                                                    "forwarded-to-telegram",
+                                                    from = data.from.clone(),
+                                                    message = rendered.clone()
+                                                )
+                                            );
+                                        }
                                     }
                                 }
                             } else if let Err(e) = rendered_result {
@@ -512,7 +557,12 @@ async fn main() {
                         }
 
                         if use_webhook {
-                            webhook::send_message(&http_client, webhook_url.as_ref().unwrap(), &data).await;
+                            webhook::send_message(
+                                &http_client,
+                                webhook_url.as_ref().unwrap(),
+                                &data,
+                            )
+                            .await;
                         }
                     }) as Pin<Box<dyn Future<Output = ()> + Send>>
                 }
@@ -521,10 +571,9 @@ async fn main() {
             log::info!("{}", fl!("syslog-server"));
 
             let result = Toplevel::new(move |s| async move {
-                s.start(SubsystemBuilder::new(
-                    "syslog-server",
-                    move |subsys| syslog::run_server(subsys, config, sender),
-                ));
+                s.start(SubsystemBuilder::new("syslog-server", move |subsys| {
+                    syslog::run_server(subsys, config, sender)
+                }));
             })
             .catch_signals()
             .handle_shutdown_requests(Duration::from_millis(2000))
