@@ -5,11 +5,16 @@
 Формат основан на [«Keep a Changelog»](https://keepachangelog.com/ru/1.1.0/),
 и этот проект придерживается [семантического версионирования](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.3.0] - 2026-06-26
+
+### Добавлено
+
+- Поддержка нескольких Telegram-чатов — укажите ID чатов через запятую ([#12](https://github.com/black-roland/emtt/issues/12)).<br>
+  [Спасибо @pir4ahna за добавление этой фичи!](https://github.com/black-roland/emtt/pull/13)
 
 ## Исправлено
 
-- EMtT теперь корректно обрабатывает сигналы завершения (<kbd>Ctrl</kbd> + <kbd>C</kbd> и от `docker stop`).
+- EMtT теперь корректно обрабатывает сигналы завершения: <kbd>Ctrl</kbd> + <kbd>C</kbd> и от `docker stop` ([#11](https://github.com/black-roland/emtt/issues/11)).
 
 ## [1.2.4] - 2026-05-19
 

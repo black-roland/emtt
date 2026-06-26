@@ -9,7 +9,7 @@ Unicode True
 
 !define APPNAME "EMtT"
 !ifndef VERSION
-  !define VERSION "1.2.4"
+  !define VERSION "1.3.0"
 !endif
 !ifndef DIST_DIR
   !define DIST_DIR "dist"
@@ -122,7 +122,7 @@ Function ConfigPage
   ${NSD_CreatePassword} 0u 10u 100% 12u ""
   Pop $TokenField
 
-  ${NSD_CreateLabel} 0u 24u 100% 9u "ID чата Telegram (обязательно):"
+  ${NSD_CreateLabel} 0u 24u 100% 9u "ID чата Telegram (можно указать несколько чатов через запятую):"
   Pop $0
   ${NSD_CreateText} 0u 34u 100% 12u ""
   Pop $ChatIdField
