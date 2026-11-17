@@ -1,0 +1,45 @@
+name: Сообщить о проблеме
+description: Что-то не работает или работает неправильно
+title: "Проблема: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Опишите проблему
+      description: Что происходит и что вы ожидали вместо этого?
+      placeholder: |
+        Запустил EMtT на Raspberry Pi: порт 50514 слушается, пакеты из сети Meshtastic приходят, но в Telegram сообщения не появляются.
+        В терминале ошибок не видно, только строки о приёме пакетов.
+        Ожидал, что сообщения будут пересылаться в чат.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Логи
+      description: |
+        Самая ценная часть — без логов я могу только гадать.
+        - Если запускаете в терминале — скопируйте вывод целиком, включая строки запуска; если в Docker — приложите вывод *docker logs <имя_контейнера>*.
+        - Если полезной информации не видно, запустите EMtT с повышенным уровнем логирования (*--log-level=debug* или переменная *LOG_LEVEL=debug*), воспроизведите проблему и приложите вывод.
+      placeholder: |
+        2026-11-16 10:15:22 INFO Received syslog message from 192.168.1.50:52014
+        2026-11-16 10:15:23 ERROR Failed to send message to Telegram Bot API: 400 Bad Request — chat not found
+      render: text
+
+  - type: input
+    id: boosty
+    attributes:
+      label: Ваше имя на Boosty
+      placeholder: ivan.ivanov.99
+      description: |
+        Если вы [подписчик на Boosty](https://boosty.to/mansmarthome), то укажите, пожалуйста, никнейм или часть email — лишь бы я понял, о ком речь.
+
+        ⚠️ Данные доступны публично, поэтому полный email лучше не оставлять.
+
+  - type: input
+    id: environment
+    attributes:
+      label: Где и как запускаете
+      placeholder: "Raspberry Pi 4 (aarch64), Docker / или Windows 11, установщик"
